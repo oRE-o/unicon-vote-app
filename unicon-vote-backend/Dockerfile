@@ -3,10 +3,8 @@ FROM node:18-alpine AS builder
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
-
 RUN npm install -g pnpm
-
+COPY package.json pnpm-lock.yaml ./
 RUN pnpm install
 
 COPY . .
@@ -18,8 +16,7 @@ FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
-RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod
 
 COPY --from=builder /usr/src/app/dist ./dist

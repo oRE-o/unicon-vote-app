@@ -6,14 +6,14 @@ import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs"; // 비밀번호 해싱을 위해 import
 
 // 모델 import
-import Game from "./models/gameModel";
-import User from "./models/userModel";
+import Game from "./models/gameModel.js";
+import User from "./models/userModel.js";
 
 // 라우트 import
-import gameRoutes from "./routes/gameRoutes";
-import adminRoutes from "./routes/adminRoutes";
-import authRoutes from "./routes/authRoutes";
-import voteRoutes from "./routes/voteRoutes";
+import gameRoutes from "./routes/gameRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import voteRoutes from "./routes/voteRoutes.js";
 
 dotenv.config();
 
