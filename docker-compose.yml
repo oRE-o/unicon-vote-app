@@ -3,23 +3,24 @@ version: "3.8" # Docker Compose 파일 형식 버전
 services:
   # --- 1. 백엔드 서비스 ---
   backend:
-    image: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-backend:latest # Docker Hub에 푸시될 이미지 이름
-    container_name: unicon-backend # 컨테이너 이름 지정
+    image: ${DOCKERHUB_USERNAME}/unicon-vote-backend:latest
+    container_name: unicon-backend
     ports:
-      - "5001:5001" # 호스트(EC2)의 5001번 포트를 컨테이너의 5001번 포트에 연결
-    environment: # 백엔드 컨테이너 내부에서 사용할 환경 변수
-      MONGO_URI: mongodb://mongo:27017/unicon_vote # DB 컨테이너 이름(mongo)으로 접속
-      JWT_SECRET: ${{ secrets.JWT_SECRET }} # GitHub Actions에서 주입될 시크릿
-      ADMIN_UUID: ${{ secrets.ADMIN_UUID }} # 시딩에 사용될 관리자 UUID
-      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }} # 시딩에 사용될 관리자 비밀번호
+      - "5001:5001"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/unicon_vote
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_UUID=${ADMIN_UUID}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+
     depends_on: # 백엔드는 MongoDB가 먼저 시작되어야 함
       - mongo
     restart: always # 컨테이너 종료 시 항상 재시작
 
   # --- 2. 프론트엔드 서비스 ---
   frontend:
-    image: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-frontend:latest # Docker Hub에 푸시될 이미지 이름
-    container_name: unicon-frontend # 컨테이너 이름 지정
+    image: ${DOCKERHUB_USERNAME}/unicon-vote-frontend:latest
+    container_name: unicon-frontend
     ports:
       - "80:80" # 호스트(EC2)의 80번 포트를 컨테이너의 80번 포트에 연결
     restart: always
