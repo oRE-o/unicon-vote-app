@@ -4,7 +4,6 @@ import api from "../api";
 import SplitText from "../components/reactbits/SplitText";
 import GameCard from "../components/GameCard";
 import GameList from "../components/GameList"; // 1. GameList 컴포넌트 import
-import Modal from "../components/Modal";
 import VoteModal from "../components/VoteModal";
 import { jwtDecode } from "jwt-decode"; // 1. jwt-decode 임포트
 
@@ -29,8 +28,6 @@ function MainPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [userVotes, setUserVotes] = useState<Vote[]>([]);
   const [votingGame, setVotingGame] = useState<Game | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState({ title: "", message: "" });
   const [userName, setUserName] = useState("...");
   const [userClub, setUserClub] = useState<string | undefined>(undefined); // 1. userClub state 추가
 

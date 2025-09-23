@@ -1,4 +1,3 @@
-import React from "react";
 import type { Game } from "../types";
 
 // 백엔드와 타입을 맞춥니다.
