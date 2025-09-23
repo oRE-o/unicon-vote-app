@@ -24,6 +24,9 @@ services:
     container_name: unicon-frontend
     ports:
       - "80:80" # 호스트(EC2)의 80번 포트를 컨테이너의 80번 포트에 연결
+    environment:
+      - VITE_API_BASE_URL=${SERVER_HOST} # 백엔드 API URL (필요시 수정)
+
     restart: always
 
   # --- 3. MongoDB 데이터베이스 서비스 ---
