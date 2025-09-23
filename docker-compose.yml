@@ -12,6 +12,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_UUID=${ADMIN_UUID}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - CORS_ORIGIN=${CORS_ORIGIN}
 
     depends_on: # 백엔드는 MongoDB가 먼저 시작되어야 함
       - mongo

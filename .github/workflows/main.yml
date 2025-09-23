@@ -79,6 +79,7 @@ jobs:
             echo "MONGO_ROOT_USER=${{ secrets.MONGO_ROOT_USER }}" >> .env
             echo "MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}" >> .env
             echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
+            echo "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" >> .env 
 
             # 3. Docker Hub에 로그인합니다.
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
