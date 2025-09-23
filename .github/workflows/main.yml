@@ -2,7 +2,7 @@ name: CI/CD with Docker Compose
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   DOCKER_IMAGE_BACKEND: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-backend
@@ -41,7 +41,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+
       - name: Build and push frontend
         uses: docker/build-push-action@v4
         with:
@@ -59,38 +59,27 @@ jobs:
     needs: [build-backend, build-frontend]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3 # docker-compose.yml 파일 가져오기
-
-      - name: Deploy with Docker Compose
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # 서버에 접속하여 Docker Hub 로그인
+            # 1. git clone 받아둔 프로젝트 폴더로 이동합니다.
+            cd unicon-vote-app
+
+            # 2. main 브랜치의 최신 변경사항(docker-compose.yml 등)을 받아옵니다.
+            git pull origin main
+
+            # 3. Docker Hub에 로그인합니다.
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
 
-            # GitHub 저장소에서 docker-compose.yml 파일을 서버로 복사
-            # (actions/checkout으로 워크플로우에 docker-compose.yml이 존재)
-            # cp /home/runner/work/<repo_name>/<repo_name>/docker-compose.yml /tmp/docker-compose.yml
-            # 이 워크플로우는 .github/workflows/main.yml이 위치한 레포의 루트에서 실행되므로,
-            # docker-compose.yml이 루트에 있다면 경로가 '.'이 됩니다.
-            
-            # Docker Compose 실행 전 필요한 환경 변수 설정
-            # Docker Compose는 .env 파일이 없으면 쉘 환경 변수를 사용합니다.
-            export MONGO_URI="${{ secrets.MONGO_URI }}"
-            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            export ADMIN_UUID="${{ secrets.ADMIN_UUID }}"
-            export ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
-            
-            # Docker Compose를 이용해 모든 서비스(backend, frontend, mongo) 실행
-            # -f: docker-compose 파일 지정
-            # pull: 최신 이미지 다운로드
-            # up -d: 백그라운드에서 서비스 시작 (없으면 생성, 있으면 재시작/업데이트)
-            # --build: 필요시 로컬에서 이미지 다시 빌드 (여기서는 Docker Hub에서 풀 받으니 필요 없음)
-            docker-compose -f docker-compose.yml pull
-            docker-compose -f docker-compose.yml up -d
-            
+            # 4. docker-compose로 최신 이미지를 pull하고 서비스를 시작/재시작합니다.
+            docker-compose pull
+            docker-compose up -d
+
+            # 5. 불필요하게 쌓인 옛날 Docker 이미지들을 정리합니다 (선택사항이지만 추천).
+            docker image prune -f
+
             echo "Deployment completed successfully!"
