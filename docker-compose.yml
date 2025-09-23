@@ -29,6 +29,9 @@ services:
     image: mongo:latest # 공식 MongoDB Docker 이미지 사용
     container_name: unicon-mongodb # 컨테이너 이름 지정
     command: mongod --bind_ip_all # 모든 IP에서 접속 허용
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
     ports:
       - "27017:27017" # MongoDB 기본 포트 (컨테이너 내부와 외부 연결)
     volumes:
