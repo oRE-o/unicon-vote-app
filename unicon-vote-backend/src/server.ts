@@ -1,6 +1,6 @@
 import express, { Express } from "express";
 import mongoose from "mongoose";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs"; // 비밀번호 해싱을 위해 import
@@ -205,10 +205,18 @@ const seedDatabase = async () => {
 };
 
 const app: Express = express();
-
-const corsOptions = {
-  origin: "http://localhost:5173", // 요청을 허용할 프론트엔드 주소만 명시
-  credentials: true, // 쿠키 등 자격 증명을 포함한 요청을 허용하려면 true
+const whitelist = (process.env.CORS_ORIGIN || "").split(",");
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    // !origin: Postman 등 브라우저가 아닌 도구에서의 요청 허용
+    // whitelist.indexOf(origin!) !== -1: 허용 목록에 있는 도메인 허용
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
