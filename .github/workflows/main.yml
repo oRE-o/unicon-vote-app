@@ -1,0 +1,80 @@
+name: CI/CD with Docker
+
+on:
+  push:
+    branches: [ "main" ] # main 브랜치에 코드가 push될 때마다 실행
+
+env:
+  DOCKER_IMAGE_BACKEND: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-backend
+  DOCKER_IMAGE_FRONTEND: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-frontend
+
+jobs:
+  # --- 백엔드 빌드 및 푸시 잡 ---
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Docker Hub Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./unicon-vote-backend # 백엔드 폴더 위치
+          push: true
+          tags: ${{ env.DOCKER_IMAGE_BACKEND }}:latest
+
+  # --- 프론트엔드 빌드 및 푸시 잡 ---
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Docker Hub Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./unicon-vote-frontend # 프론트엔드 폴더 위치
+          push: true
+          tags: ${{ env.DOCKER_IMAGE_FRONTEND }}:latest
+
+  # --- 서버에 배포하는 잡 (CD) ---
+  deploy:
+    needs: [build-backend, build-frontend] # 빌드 잡들이 성공해야 실행
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }} # 서버 IP
+          username: ${{ secrets.SERVER_USERNAME }} # 서버 사용자 이름
+          key: ${{ secrets.SERVER_SSH_KEY }} # 서버 접속용 SSH 비공개 키
+          script: |
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            
+            # --- 백엔드 컨테이너 배포 ---
+            docker pull ${{ env.DOCKER_IMAGE_BACKEND }}:latest
+            docker stop unicon-backend || true
+            docker rm unicon-backend || true
+            docker run -d -p 5001:5001 --name unicon-backend --restart always \
+              -e MONGO_URI=${{ secrets.MONGO_URI }} \
+              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              ${{ env.DOCKER_IMAGE_BACKEND }}:latest
+              
+            # --- 프론트엔드 컨테이너 배포 ---
+            docker pull ${{ env.DOCKER_IMAGE_FRONTEND }}:latest
+            docker stop unicon-frontend || true
+            docker rm unicon-frontend || true
+            docker run -d -p 80:80 --name unicon-frontend --restart always \
+              ${{ env.DOCKER_IMAGE_FRONTEND }}:latest

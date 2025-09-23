@@ -1,0 +1,39 @@
+version: "3.8" # Docker Compose 파일 형식 버전
+
+services:
+  # --- 1. 백엔드 서비스 ---
+  backend:
+    image: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-backend:latest # Docker Hub에 푸시될 이미지 이름
+    container_name: unicon-backend # 컨테이너 이름 지정
+    ports:
+      - "5001:5001" # 호스트(EC2)의 5001번 포트를 컨테이너의 5001번 포트에 연결
+    environment: # 백엔드 컨테이너 내부에서 사용할 환경 변수
+      MONGO_URI: mongodb://mongo:27017/unicon_vote # DB 컨테이너 이름(mongo)으로 접속
+      JWT_SECRET: ${{ secrets.JWT_SECRET }} # GitHub Actions에서 주입될 시크릿
+      ADMIN_UUID: ${{ secrets.ADMIN_UUID }} # 시딩에 사용될 관리자 UUID
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }} # 시딩에 사용될 관리자 비밀번호
+    depends_on: # 백엔드는 MongoDB가 먼저 시작되어야 함
+      - mongo
+    restart: always # 컨테이너 종료 시 항상 재시작
+
+  # --- 2. 프론트엔드 서비스 ---
+  frontend:
+    image: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-frontend:latest # Docker Hub에 푸시될 이미지 이름
+    container_name: unicon-frontend # 컨테이너 이름 지정
+    ports:
+      - "80:80" # 호스트(EC2)의 80번 포트를 컨테이너의 80번 포트에 연결
+    restart: always
+
+  # --- 3. MongoDB 데이터베이스 서비스 ---
+  mongo:
+    image: mongo:latest # 공식 MongoDB Docker 이미지 사용
+    container_name: unicon-mongodb # 컨테이너 이름 지정
+    ports:
+      - "27017:27017" # MongoDB 기본 포트 (컨테이너 내부와 외부 연결)
+    volumes:
+      # 데이터를 EC2 호스트에 영구적으로 저장하는 볼륨 설정 (매우 중요!)
+      - mongo_data:/data/db
+    restart: always
+
+volumes:
+  mongo_data: # 'mongo_data'라는 이름의 볼륨 정의
