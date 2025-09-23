@@ -2,7 +2,8 @@
 {
   "compilerOptions": {
     "target": "es2020", // 컴파일될 JavaScript 버전
-    "module": "commonjs", // 모듈 시스템
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "./dist", // 컴파일된 JS 파일이 저장될 폴더
     "rootDir": "./src", // TS 소스코드 루트 폴더
     "strict": true, // 엄격한 타입 체크 활성화
