@@ -8,8 +8,7 @@ services:
     ports:
       - "5001:5001"
     environment:
-      - MONGO_URI=mongodb://mongo:27017/unicon_vote
-      - JWT_SECRET=${JWT_SECRET}
+      - MONGO_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/unicon_vote?authSource=admin      - JWT_SECRET=${JWT_SECRET}
       - ADMIN_UUID=${ADMIN_UUID}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
 

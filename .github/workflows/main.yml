@@ -76,6 +76,8 @@ jobs:
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "ADMIN_UUID=${{ secrets.ADMIN_UUID }}" >> .env
             echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
+            echo "MONGO_ROOT_USER=${{ secrets.MONGO_ROOT_USER }}" >> .env
+            echo "MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}" >> .env
 
             # 3. Docker Hub에 로그인합니다.
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
