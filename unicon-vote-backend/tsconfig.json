@@ -1,0 +1,14 @@
+// tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es2020", // 컴파일될 JavaScript 버전
+    "module": "commonjs", // 모듈 시스템
+    "outDir": "./dist", // 컴파일된 JS 파일이 저장될 폴더
+    "rootDir": "./src", // TS 소스코드 루트 폴더
+    "strict": true, // 엄격한 타입 체크 활성화
+    "esModuleInterop": true, // ES 모듈과 CommonJS 모듈 간 호환성 활성화
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"] // 컴파일할 파일 범위
+}
