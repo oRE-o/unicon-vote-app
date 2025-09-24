@@ -48,8 +48,6 @@ jobs:
           context: ./unicon-vote-frontend
           push: true
           tags: ${{ env.DOCKER_IMAGE_FRONTEND }}:latest
-          # --- 👇 프론트엔드 빌드 시 API_BASE_URL 환경변수 전달 ---
-          # 배포될 서버의 IP를 VITE_API_BASE_URL로 주입
           build-args: |
             VITE_API_BASE_URL=https://${{ secrets.SERVER_DOMAIN }}:5001
             # 💡 중요: 서버 IP를 사용하세요. EC2에 도메인을 연결했다면 도메인으로.

@@ -28,8 +28,6 @@ services:
     volumes:
       - certbot_certs:/etc/letsencrypt # 인증서 저장용 볼륨 마운트
       - web_root:/var/www/certbot # 도메인 인증용 볼륨 마운트
-    environment:
-      - VITE_API_BASE_URL=https://${SERVER_DOMAIN}:5001 # 백엔드 API URL (필요시 수정)
     depends_on:
       - backend
     restart: always
