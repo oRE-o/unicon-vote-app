@@ -45,5 +45,14 @@ services:
       - mongo_data:/data/db
     restart: always
 
+  certbot:
+    image: certbot/certbot
+    container_name: unicon-certbot
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - web_root:/var/www/certbot
+
 volumes:
-  mongo_data: # 'mongo_data'라는 이름의 볼륨 정의
+  mongo_data:
+  certbot_certs: # 인증서 저장용 볼륨
+  web_root: # 도메인 인증용 볼륨
