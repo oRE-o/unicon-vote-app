@@ -24,6 +24,10 @@ services:
     container_name: unicon-frontend
     ports:
       - "80:80" # 호스트(EC2)의 80번 포트를 컨테이너의 80번 포트에 연결
+      - "443:443" # HTTPS를 위한 443 포트 추가
+    volumes:
+      - certbot_certs:/etc/letsencrypt # 인증서 저장용 볼륨 마운트
+      - web_root:/var/www/certbot # 도메인 인증용 볼륨 마운트
     environment:
       - VITE_API_BASE_URL=https://${SERVER_DOMAIN}:5001 # 백엔드 API URL (필요시 수정)
     depends_on:
