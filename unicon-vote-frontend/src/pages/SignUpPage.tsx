@@ -100,7 +100,7 @@ function SignUpPage() {
       {/* 텍스트 애니메이션 */}
       <SplitText
         text={welcomeMessage}
-        className="text-5xl font-bold text-center"
+        className="text-3xl font-bold text-center"
         delay={70}
         duration={2}
         ease="elastic.out"
@@ -136,9 +136,7 @@ function SignUpPage() {
         <label className="label mt-2">이름</label>
         <input
           type="text"
-          placeholder={
-            userRole === "guest" ? "방문객" : userName
-          }
+          placeholder={userRole === "guest" ? "방문객" : userName}
           className="input input-bordered w-full"
           value={""}
           onChange={(e) => setUserName(e.target.value)}

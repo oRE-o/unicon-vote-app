@@ -82,7 +82,7 @@ function LoginPage() {
       <div className="min-h-screen bg-base-100 flex flex-col items-center justify-center gap-3 p-4">
         <SplitText
           text="Vote@UNICON!"
-          className="text-5xl font-bold text-center p-1"
+          className="text-3xl font-bold text-center p-1"
           delay={50}
           duration={2}
           ease="elastic.out"

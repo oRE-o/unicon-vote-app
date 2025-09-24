@@ -122,7 +122,7 @@ function MainPage() {
       <header className="text-center mb-10">
         <SplitText
           text={`안녕하세요, ${userName}님!`}
-          className="text-4xl md:text-5xl font-bold pb-1 pt-10"
+          className="text-3xl md:text-4xl font-bold pb-1 pt-10"
           splitType="chars"
           delay={70}
           duration={2}
@@ -130,13 +130,13 @@ function MainPage() {
           from={{ opacity: 0, y: 20 }}
           to={{ opacity: 1, y: 0 }}
         />
-        <p className="mt-4 text-lg text-base-content/80">
+        <p className="mt-4 text-base text-base-content/80">
           UNICON의 게임들에 메달을 수여해주세요!
         </p>
-        <p className="mt-4 text-lg text-base-content/80">
+        <p className="mt-4 text-sm text-base-content/80">
           4가지 기준에 맞춰 금, 은, 동메달을 수여할 수 있어요.
         </p>
-        <p className="mt-4 text-lg text-base-content/80">
+        <p className="mt-4 text-sm text-base-content/80">
           다시 투표하기 버튼을 눌러 언제든지 투표를 수정할 수 있어요.
         </p>
       </header>
