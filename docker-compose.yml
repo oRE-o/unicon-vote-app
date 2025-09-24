@@ -25,7 +25,7 @@ services:
     ports:
       - "80:80" # 호스트(EC2)의 80번 포트를 컨테이너의 80번 포트에 연결
     environment:
-      - VITE_API_BASE_URL=${SERVER_HOST} # 백엔드 API URL (필요시 수정)
+      - VITE_API_BASE_URL=https://${SERVER_DOMAIN}:5001 # 백엔드 API URL (필요시 수정)
     depends_on:
       - backend
     restart: always

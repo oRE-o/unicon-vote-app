@@ -51,7 +51,7 @@ jobs:
           # --- 👇 프론트엔드 빌드 시 API_BASE_URL 환경변수 전달 ---
           # 배포될 서버의 IP를 VITE_API_BASE_URL로 주입
           build-args: |
-            VITE_API_BASE_URL=https://${{ secrets.SERVER_HOST }}:5001
+            VITE_API_BASE_URL=https://${{ secrets.SERVER_DOMAIN }}:5001
             # 💡 중요: 서버 IP를 사용하세요. EC2에 도메인을 연결했다면 도메인으로.
 
   # --- 서버에 배포하는 잡 (CD) - Docker Compose 사용하도록 변경 ---
@@ -81,6 +81,7 @@ jobs:
             echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
             echo "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" >> .env 
             echo "SERVER_HOST=${{ secrets.SERVER_HOST }}" >> .env
+            echo "SERVER_DOMAIN=${{ secrets.SERVER_DOMAIN }}" >> .env
 
             # 3. Docker Hub에 로그인합니다.
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
