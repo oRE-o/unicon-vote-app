@@ -1,9 +1,9 @@
 import express, { Request, Response, Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import User from "../models/userModel";
-import Game from "../models/gameModel"; // Game 모델 import
-import { authMiddleware } from "../middleware/authMiddleware";
-import { adminMiddleware } from "../middleware/adminMiddleware"; // 관리자 미들웨어 import
+import User from "../models/userModel.js";
+import Game from "../models/gameModel.js"; // Game 모델 import
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import { adminMiddleware } from "../middleware/adminMiddleware.js"; // 관리자 미들웨어 import
 
 const router: Router = express.Router();
 
@@ -19,7 +19,7 @@ router.get("/users", async (req: Request, res: Response) => {
 
 // POST /api/admin/users : 새 사용자 생성 (기존 create-user API와 동일)
 router.post("/users", async (req: Request, res: Response) => {
-// --- 👇 수정된 부분 ---
+  // --- 👇 수정된 부분 ---
   const { name, role, club } = req.body;
   if (!name) {
     return res.status(400).json({ message: "사용자 이름이 필요합니다." });

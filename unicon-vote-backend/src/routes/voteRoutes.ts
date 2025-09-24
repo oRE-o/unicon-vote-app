@@ -1,8 +1,8 @@
 import express, { Request, Response, Router } from "express";
-import Vote from "../models/voteModel";
-import User from "../models/userModel"; // User 모델 import
-import Game from "../models/gameModel"; // Game 모델 import
-import { authMiddleware } from "../middleware/authMiddleware";
+import Vote from "../models/voteModel.js";
+import User from "../models/userModel.js"; // User 모델 import
+import Game from "../models/gameModel.js"; // Game 모델 import
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router: Router = express.Router();
 router.use(authMiddleware); // 모든 투표 API는 로그인이 필요

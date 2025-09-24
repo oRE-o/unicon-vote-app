@@ -1,8 +1,6 @@
 // src/routes/gameRoutes.ts
 import express, { Request, Response, Router } from "express";
-import Game from "../models/gameModel";
-import User from "../models/userModel";
-import { authMiddleware } from "../middleware/authMiddleware"; // 1. 인증 미들웨어 import
+import Game from "../models/gameModel.js";
 
 const router: Router = express.Router();
 
