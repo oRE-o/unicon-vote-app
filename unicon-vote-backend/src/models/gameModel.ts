@@ -6,7 +6,7 @@ export interface IGame extends Document {
   name: string;
   description: string;
   imageUrl: string;
-  club: string; // --- 👇 게임을 만든 동아리 필드 추가 ---
+  clubs: string[]; // --- 👇 게임을 만든 동아리 필드 추가 ---
 }
 
 const gameSchema: Schema = new Schema({
@@ -23,9 +23,9 @@ const gameSchema: Schema = new Schema({
     type: String,
     required: true,
   },
-  club: {
+  clubs: {
     // 모든 게임은 소속 동아리가 있어야 함
-    type: String,
+    type: [String],
     required: true,
   },
 });

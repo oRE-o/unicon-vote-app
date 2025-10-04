@@ -22,7 +22,7 @@ function GameCard({
   myVotes,
   onVoteClick,
 }: GameCardProps) {
-  const isMyClubGame = userClub && game.club && userClub === game.club;
+  const isMyClubGame = userClub && game.clubs && game.clubs.includes(userClub);
 
   return (
     <div className="card bg-base-100 shadow-xl transition-transform duration-300 hover:scale-105 flex flex-col">
@@ -36,11 +36,13 @@ function GameCard({
       <div className="card-body flex-grow">
         <h2 className="card-title">{game.name}</h2>
         {/* --- 동아리 정보 표시 --- */}
-        {game.club && (
-          <div className="badge badge-secondary mb-2 self-start">
-            {game.club}
-          </div>
-        )}
+        <div className="my-2 flex flex-wrap gap-1">
+          {game.clubs.map((club) => (
+            <div key={club} className="badge badge-secondary">
+              {club}
+            </div>
+          ))}
+        </div>
         {/* --- 게임 설명 --- */}
         <p className="flex-grow">{game.description}</p>
 

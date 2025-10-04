@@ -35,7 +35,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     // 사용자가 동아리에 소속되어 있고, 그 동아리가 게임을 만든 동아리와 같다면
-    if (user.club && user.club === game.club) {
+    if (user.club && game.clubs.includes(user.club)) {
       return res.status(403).json({
         message: "자신이 소속된 동아리의 작품에는 투표할 수 없습니다.",
       });
