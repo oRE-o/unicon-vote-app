@@ -264,7 +264,7 @@ function AdminPage() {
               {games.map((game) => (
                 <tr key={game._id}>
                   <td>{game.name}</td>
-                  <td>{game.club}</td>
+                  <td>{game.clubs}</td>
                   <td>
                     <button
                       className="btn btn-sm btn-error"
