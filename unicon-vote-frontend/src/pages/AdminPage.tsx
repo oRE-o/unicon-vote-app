@@ -3,6 +3,7 @@ import api from "../api"; // 우리가 만든 axios 클라이언트
 import type { Game } from "../types";
 import { QRCodeSVG } from "qrcode.react"; // QR 코드 라이브러리 import
 import Modal from "../components/Modal"; // 모달 컴포넌트 재사용
+import * as XLSX from "xlsx"; // --- 👇 엑셀 라이브러리 import ---
 
 // 임시 User 타입
 interface User {
@@ -13,12 +14,24 @@ interface User {
   club?: string;
 }
 
+interface VoteResult {
+  gameName: string;
+  category: string;
+  impressive: { gold: number; silver: number; bronze: number; score: number };
+  fun: { gold: number; silver: number; bronze: number; score: number };
+  original: { gold: number; silver: number; bronze: number; score: number };
+  polished: { gold: number; silver: number; bronze: number; score: number };
+  totalScore: number;
+}
+
 function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [isUserListVisible, setIsUserListVisible] = useState(false); // 기본은 숨김
   const [qrModalUuid, setQrModalUuid] = useState<string | null>(null); // QR 모달 state
   // --- 폼 입력을 위한 State 확장 ---
+  const [isDownloading, setIsDownloading] = useState(false);
+
   const [newUser, setNewUser] = useState({ name: "", role: "guest", club: "" });
   const [newGame, setNewGame] = useState({
     name: "",
@@ -138,10 +151,60 @@ function AdminPage() {
     }
   };
 
+  const handleDownloadResults = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await api.get<VoteResult[]>("/api/admin/votes/results");
+      const results = response.data;
+
+      // 1. 데이터를 엑셀 시트 형식에 맞게 가공
+      const sheetData = results.map((item) => ({
+        "게임 이름": item.gameName,
+        "참가 부문": item.category,
+        "인상깊음 (점수)": item.impressive.score,
+        "인상깊음 (금)": item.impressive.gold,
+        "인상깊음 (은)": item.impressive.silver,
+        "인상깊음 (동)": item.impressive.bronze,
+        "재미 (점수)": item.fun.score,
+        "재미 (금)": item.fun.gold,
+        "재미 (은)": item.fun.silver,
+        "재미 (동)": item.fun.bronze,
+        "독창성 (점수)": item.original.score,
+        "독창성 (금)": item.original.gold,
+        "독창성 (은)": item.original.silver,
+        "독창성 (동)": item.original.bronze,
+        "완성도 (점수)": item.polished.score,
+        "완성도 (금)": item.polished.gold,
+        "완성도 (은)": item.polished.silver,
+        "완성도 (동)": item.polished.bronze,
+        총점: item.totalScore,
+      }));
+
+      // 2. 엑셀 워크북 생성
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "투표 결과");
+
+      // 3. 파일 다운로드 트리거
+      XLSX.writeFile(workbook, "unicon_vote_results.xlsx");
+    } catch (error) {
+      console.error("투표 결과 다운로드 실패:", error);
+      alert("투표 결과 다운로드에 실패했습니다.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="p-8">
       <h1 className="text-4xl font-bold mb-8">관리자 대시보드</h1>
-
+      <button
+        className="btn btn-success"
+        onClick={handleDownloadResults}
+        disabled={isDownloading}
+      >
+        {isDownloading ? "다운로드 중..." : "📊 투표 결과 다운로드 (XLSX)"}
+      </button>
       {/* 사용자 관리 섹션 */}
       <section className="mb-12">
         <button
