@@ -148,5 +148,33 @@ router.get("/votes/results", async (req: Request, res: Response) => {
     res.status(500).json({ message: "투표 결과 집계 중 오류 발생" });
   }
 });
+router.get("/votes/by-user", async (req: Request, res: Response) => {
+  try {
+    // 1. 모든 투표를 가져오면서, user와 game 정보를 함께 불러옵니다 (populate).
+    const votes = await Vote.find({})
+      .populate<{ user: typeof User.prototype }>("user", "name club") // user 컬렉션에서 name과 club만 가져옴
+      .populate<{ game: typeof Game.prototype }>("game", "name"); // game 컬렉션에서 name만 가져옴
 
+    // 2. 결과를 가공하여 필요한 정보만 추출
+    const results = votes.map((vote) => {
+      // populate된 user/game 정보가 없을 경우 대비 (데이터 정합성 문제)
+      const userName = vote.user ? vote.user.name : "알 수 없는 사용자";
+      const userClub = vote.user ? vote.user.club || "외부인" : "알 수 없음";
+      const gameName = vote.game ? vote.game.name : "알 수 없는 게임";
+
+      return {
+        userName: userName,
+        userClub: userClub,
+        gameName: gameName,
+        criterion: vote.criterion,
+        medal: vote.medal,
+      };
+    });
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("사용자별 투표 내역 조회 실패:", error);
+    res.status(500).json({ message: "사용자별 투표 내역 조회 중 오류 발생" });
+  }
+});
 export default router;

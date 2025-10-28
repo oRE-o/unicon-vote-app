@@ -23,6 +23,13 @@ interface VoteResult {
   polished: { gold: number; silver: number; bronze: number; score: number };
   totalScore: number;
 }
+interface UserVoteDetail {
+  userName: string;
+  userClub: string;
+  gameName: string;
+  criterion: string;
+  medal: string;
+}
 
 function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -31,6 +38,7 @@ function AdminPage() {
   const [qrModalUuid, setQrModalUuid] = useState<string | null>(null); // QR 모달 state
   // --- 폼 입력을 위한 State 확장 ---
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingUserVotes, setIsDownloadingUserVotes] = useState(false);
 
   const [newUser, setNewUser] = useState({ name: "", role: "guest", club: "" });
   const [newGame, setNewGame] = useState({
@@ -194,17 +202,70 @@ function AdminPage() {
       setIsDownloading(false);
     }
   };
+  const handleDownloadUserVotes = async () => {
+    setIsDownloadingUserVotes(true);
+    try {
+      const response = await api.get<UserVoteDetail[]>(
+        "/api/admin/votes/by-user"
+      );
+      const userVotes = response.data;
 
+      // 1. 데이터를 엑셀 시트 형식에 맞게 가공 (컬럼명 지정)
+      const sheetData = userVotes.map((vote) => ({
+        "사용자 이름": vote.userName,
+        소속: vote.userClub,
+        "게임 이름": vote.gameName,
+        "평가 기준": vote.criterion,
+        메달: vote.medal,
+      }));
+
+      // 2. 엑셀 워크북 생성
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+
+      // 컬럼 너비 자동 조절 (선택 사항)
+      const cols = Object.keys(sheetData[0] || {}).map((key) => ({
+        wch: Math.max(
+          key.length,
+          ...sheetData.map((row) => String(row[key as keyof typeof row]).length)
+        ),
+      }));
+      worksheet["!cols"] = cols;
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, "사용자별 투표 내역");
+
+      // 3. 파일 다운로드 트리거
+      XLSX.writeFile(workbook, "unicon_user_vote_details.xlsx");
+    } catch (error) {
+      console.error("사용자별 투표 내역 다운로드 실패:", error);
+      alert("사용자별 투표 내역 다운로드에 실패했습니다.");
+    } finally {
+      setIsDownloadingUserVotes(false);
+    }
+  };
   return (
     <div className="p-8">
       <h1 className="text-4xl font-bold mb-8">관리자 대시보드</h1>
-      <button
-        className="btn btn-success"
-        onClick={handleDownloadResults}
-        disabled={isDownloading}
-      >
-        {isDownloading ? "다운로드 중..." : "📊 투표 결과 다운로드 (XLSX)"}
-      </button>
+      <div className="flex gap-2">
+        {" "}
+        {/* 버튼 그룹 */}
+        {/* --- 투표 결과 다운로드 버튼 --- */}
+        <button
+          className="btn btn-success"
+          onClick={handleDownloadResults}
+          disabled={isDownloading}
+        >
+          {isDownloading ? "집계 중..." : "📊 종합 결과 (XLSX)"}
+        </button>
+        {/* --- 👇 사용자별 투표 내역 다운로드 버튼 추가 --- */}
+        <button
+          className="btn btn-info"
+          onClick={handleDownloadUserVotes}
+          disabled={isDownloadingUserVotes}
+        >
+          {isDownloadingUserVotes ? "생성 중..." : "👤 사용자별 내역 (XLSX)"}
+        </button>
+      </div>
       {/* 사용자 관리 섹션 */}
       <section className="mb-12">
         <button
