@@ -16,7 +16,7 @@ interface User {
 function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [games, setGames] = useState<Game[]>([]);
-
+  const [isUserListVisible, setIsUserListVisible] = useState(false); // 기본은 숨김
   const [qrModalUuid, setQrModalUuid] = useState<string | null>(null); // QR 모달 state
   // --- 폼 입력을 위한 State 확장 ---
   const [newUser, setNewUser] = useState({ name: "", role: "guest", club: "" });
@@ -144,6 +144,12 @@ function AdminPage() {
 
       {/* 사용자 관리 섹션 */}
       <section className="mb-12">
+        <button
+          className="btn btn-sm btn-outline"
+          onClick={() => setIsUserListVisible(!isUserListVisible)}
+        >
+          {isUserListVisible ? "목록 숨기기" : "목록 보기"}
+        </button>
         <h2 className="text-2xl font-bold mb-4">사용자 관리</h2>
         <form
           onSubmit={handleCreateUser}
@@ -177,57 +183,61 @@ function AdminPage() {
             사용자 생성
           </button>
         </form>
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>소속 동아리</th>
-                <th>역할</th>
-                <th>액션</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user._id}>
-                  <td>{user.name}</td>
-                  <td>{user.club || "-"}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        user.role === "admin" ? "badge-secondary" : ""
-                      }`}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  {/* --- 👇 중첩된 <td> 태그 오류 수정 --- */}
-                  <td className="flex flex-wrap gap-2">
-                    <button
-                      className="btn btn-sm btn-info"
-                      onClick={() => showQrCode(user.uuid)}
-                    >
-                      QR 보기
-                    </button>
-                    <button
-                      className="btn btn-sm btn-warning"
-                      onClick={() => handleResetPassword(user.uuid)}
-                    >
-                      비번 초기화
-                    </button>
-                    <button
-                      className="btn btn-sm btn-error"
-                      onClick={() => handleDeleteUser(user.uuid)}
-                    >
-                      삭제
-                    </button>
-                  </td>
-                  {/* --- 👆 수정 끝 --- */}
+        {isUserListVisible && (
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="table w-full table-zebra table-sm">
+              {" "}
+              {/* table-sm 추가 */}
+              <thead>
+                <tr>
+                  <th>이름</th>
+                  <th>소속 동아리</th>
+                  <th>역할</th>
+                  <th>액션</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user._id}>
+                    <td>{user.name}</td>
+                    <td>{user.club || "-"}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          user.role === "admin" ? "badge-secondary" : ""
+                        }`}
+                      >
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="flex flex-wrap gap-1">
+                      {" "}
+                      {/* gap 줄임 */}
+                      <button
+                        className="btn btn-xs btn-info" // btn-xs로 크기 줄임
+                        onClick={() => showQrCode(user.uuid)}
+                      >
+                        QR
+                      </button>
+                      <button
+                        className="btn btn-xs btn-warning"
+                        onClick={() => handleResetPassword(user.uuid)}
+                      >
+                        비초
+                      </button>
+                      <button
+                        className="btn btn-xs btn-error"
+                        onClick={() => handleDeleteUser(user.uuid)}
+                      >
+                        삭제
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {/* --- 게임 관리 섹션 개선 --- */}

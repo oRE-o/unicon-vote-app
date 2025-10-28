@@ -28,7 +28,7 @@ function GameCard({
     new Set(
       game.developers
         .map((dev) => dev.split("_")[0]) // "동아리_실명"에서 "동아리"만 추출
-        .filter((club) => club)
+        .filter((club) => club && club !== "외부인") // <-- "외부인" 제거 필터 추가! ✨
     )
   );
   const userDeveloperKey =
