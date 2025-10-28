@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import User from "../models/userModel.js";
 import Game from "../models/gameModel.js"; // Game 모델 import
+import Vote from "../models/voteModel.js"; // Game 모델 import
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { adminMiddleware } from "../middleware/adminMiddleware.js"; // 관리자 미들웨어 import
 
@@ -100,6 +101,51 @@ router.delete("/:uuid", async (req: Request, res: Response) => {
     res.status(200).json({ message: "사용자가 삭제되었습니다." });
   } catch (error) {
     res.status(500).json({ message: "사용자 삭제 중 오류 발생" });
+  }
+});
+
+router.get("/votes/results", async (req: Request, res: Response) => {
+  try {
+    // 1. 모든 게임 정보 가져오기 (이름, 카테고리 등)
+    const games = (await Game.find({})) as any[];
+    // 2. 모든 투표 정보 가져오기
+    const votes = await Vote.find({});
+
+    // 3. 게임별 점수 집계용 객체 초기화
+    const results: Record<string, any> = {};
+    games.forEach((game) => {
+      results[game._id.toString()] = {
+        gameName: game.name,
+        category: game.category,
+        impressive: { gold: 0, silver: 0, bronze: 0, score: 0 },
+        fun: { gold: 0, silver: 0, bronze: 0, score: 0 },
+        original: { gold: 0, silver: 0, bronze: 0, score: 0 },
+        polished: { gold: 0, silver: 0, bronze: 0, score: 0 },
+        totalScore: 0,
+      };
+    });
+
+    // 4. 투표 데이터 순회하며 점수 계산 (금: 3점, 은: 2점, 동: 1점)
+    votes.forEach((vote) => {
+      const gameId = vote.game.toString();
+      if (results[gameId] && results[gameId][vote.criterion]) {
+        results[gameId][vote.criterion][vote.medal]++; // 메달 개수 증가
+        let scoreToAdd = 0;
+        if (vote.medal === "gold") scoreToAdd = 3;
+        else if (vote.medal === "silver") scoreToAdd = 2;
+        else if (vote.medal === "bronze") scoreToAdd = 1;
+
+        results[gameId][vote.criterion].score += scoreToAdd; // 부문 점수 합산
+        results[gameId].totalScore += scoreToAdd; // 총점 합산
+      }
+    });
+
+    // 5. 집계 결과를 배열 형태로 변환하여 반환
+    const finalResults = Object.values(results);
+    res.status(200).json(finalResults);
+  } catch (error) {
+    console.error("투표 결과 집계 실패:", error);
+    res.status(500).json({ message: "투표 결과 집계 중 오류 발생" });
   }
 });
 
