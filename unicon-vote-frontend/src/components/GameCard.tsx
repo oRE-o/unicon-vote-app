@@ -9,20 +9,35 @@ const MEDAL_ICONS: Record<string, string> = {
 
 interface GameCardProps {
   game: Game;
-  userClub?: string; // 1. userClub prop 추가
-  voteCount: number; // 이 게임이 받은 총 투표(메달) 수
-  myVotes: Record<string, string>; // 내가 이 게임에 준 메달들 { criterion: medal }
-  onVoteClick: () => void; // '투표하기' 버튼 클릭 시 호출될 함수
+  voteCount: number;
+  myVotes: Record<string, string>;
+  currentUserName?: string;
+  currentUserClub?: string;
+  onVoteClick: () => void;
 }
-
 function GameCard({
   game,
-  userClub,
   voteCount,
   myVotes,
+  currentUserName,
+  currentUserClub, // Props 변경
   onVoteClick,
 }: GameCardProps) {
-  const isMyClubGame = userClub && game.clubs && game.clubs.includes(userClub);
+  const uniqueClubs = Array.from(
+    new Set(
+      game.developers
+        .map((dev) => dev.split("_")[0]) // "동아리_실명"에서 "동아리"만 추출
+        .filter((club) => club)
+    )
+  );
+  const userDeveloperKey =
+    currentUserClub && currentUserName
+      ? `${currentUserClub}_${currentUserName}`
+      : null;
+
+  const isMyClubGame: boolean =
+    !!userDeveloperKey &&
+    game.developers.some((dev) => dev === userDeveloperKey); // 정확히 일치하는지 비교
 
   return (
     <div className="card bg-base-100 shadow-xl transition-transform duration-300 hover:scale-105 flex flex-col">
@@ -37,7 +52,7 @@ function GameCard({
         <h2 className="card-title">{game.name}</h2>
         {/* --- 동아리 정보 표시 --- */}
         <div className="my-2 flex flex-wrap gap-1">
-          {game.clubs.map((club) => (
+          {uniqueClubs.map((club) => (
             <div key={club} className="badge badge-secondary">
               {club}
             </div>
@@ -67,10 +82,9 @@ function GameCard({
           <button
             className="btn btn-primary"
             onClick={onVoteClick}
-            disabled={!!isMyClubGame} // 2. disabled 속성 추가
+            disabled={isMyClubGame}
           >
-            {isMyClubGame ? "투표 불가" : "투표하기"}{" "}
-            {/* 3. 버튼 텍스트 변경 */}
+            {isMyClubGame ? "참여작 투표 불가" : "투표하기"}
           </button>
         </div>
       </div>

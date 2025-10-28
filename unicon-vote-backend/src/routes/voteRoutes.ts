@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from "express";
 import Vote from "../models/voteModel.js";
-import User from "../models/userModel.js"; // User 모델 import
+import User, { IUser } from "../models/userModel.js"; // User 모델 import
 import Game from "../models/gameModel.js"; // Game 모델 import
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -23,22 +23,25 @@ router.post("/", async (req: Request, res: Response) => {
     const { gameId, criterion, medal } = req.body;
     const userId = req.user!._id;
 
-    const [user, game] = await Promise.all([
-      User.findById(userId),
-      Game.findById(gameId),
-    ]);
+    const user = req.user as IUser;
+    const game = await Game.findById(gameId);
 
     if (!user || !game) {
       return res
         .status(404)
         .json({ message: "사용자 또는 게임을 찾을 수 없습니다." });
     }
+    const userDeveloperKey = user.club ? `${user.club}_${user.name}` : null;
+    let isDeveloper = false;
+    if (userDeveloperKey) {
+      // Array.prototype.includes()를 사용하여 정확히 일치하는 문자열을 찾아요!
+      isDeveloper = game.developers.includes(userDeveloperKey);
+    }
 
-    // 사용자가 동아리에 소속되어 있고, 그 동아리가 게임을 만든 동아리와 같다면
-    if (user.club && game.clubs.includes(user.club)) {
-      return res.status(403).json({
-        message: "자신이 소속된 동아리의 작품에는 투표할 수 없습니다.",
-      });
+    if (isDeveloper) {
+      return res
+        .status(403)
+        .json({ message: "자신이 참여한 작품에는 투표할 수 없습니다." });
     }
 
     // 이 Vote를 생성하면 규칙에 위배되는지 서버에서 한번 더 확인

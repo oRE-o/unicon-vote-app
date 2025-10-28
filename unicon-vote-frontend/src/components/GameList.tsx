@@ -7,7 +7,9 @@ interface GameListProps {
   // MainPage에서 계산된 데이터들을 props로 받습니다.
   totalVotesByGame: Record<string, number>;
   votesByGame: Record<string, Record<string, string>>;
-  userClub?: string; // 1. userClub prop 추가
+  currentUserName?: string;
+  currentUserClub?: string;
+  // --- 👆 Props 변경 끝 ---
   onVoteClick: (game: Game) => void;
 }
 
@@ -15,7 +17,8 @@ function GameList({
   games,
   totalVotesByGame,
   votesByGame,
-  userClub,
+  currentUserName, // Props 변경
+  currentUserClub, // Props 변경
   onVoteClick,
 }: GameListProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,7 +46,9 @@ function GameList({
             <GameCard
               key={game._id}
               game={game}
-              userClub={userClub} // 2. userClub prop 전달
+              // --- 👇 GameCard에 이름과 동아리 props 전달 ---
+              currentUserName={currentUserName}
+              currentUserClub={currentUserClub}
               // GameCard에 필요한 데이터를 전달합니다.
               voteCount={totalVotesByGame[game._id] || 0}
               myVotes={votesByGame[game._id] || {}}

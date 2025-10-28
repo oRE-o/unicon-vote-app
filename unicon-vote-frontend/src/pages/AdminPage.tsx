@@ -16,6 +16,7 @@ interface User {
 function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [games, setGames] = useState<Game[]>([]);
+
   const [qrModalUuid, setQrModalUuid] = useState<string | null>(null); // QR 모달 state
   // --- 폼 입력을 위한 State 확장 ---
   const [newUser, setNewUser] = useState({ name: "", role: "guest", club: "" });
@@ -23,7 +24,7 @@ function AdminPage() {
     name: "",
     description: "",
     imageUrl: "",
-    club: "",
+    developers: "",
   });
 
   const fetchUsers = async () => {
@@ -87,14 +88,27 @@ function AdminPage() {
 
   const handleAddGame = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!newGame.name.trim() || !newGame.club.trim()) {
-      alert("게임 이름과 소속 동아리는 필수입니다.");
+    // developers 필드가 비어있는지 확인
+    if (!newGame.name.trim() || !newGame.developers.trim()) {
+      alert("게임 이름과 개발자 목록은 필수입니다.");
       return;
     }
     try {
-      await api.post("/api/admin/games", newGame);
-      setNewGame({ name: "", description: "", imageUrl: "", club: "" }); // 폼 초기화
-      await fetchGames(); // 목록 새로고침
+      // 쉼표로 구분된 문자열을 배열로 변환
+      const developersArray = newGame.developers
+        .split(",")
+        .map((dev) => dev.trim())
+        .filter((dev) => dev);
+
+      // 👇 API 호출 시 developers 배열을 전송
+      await api.post("/api/admin/games", {
+        ...newGame,
+        developers: developersArray,
+      });
+
+      // 폼 초기화 (club 대신 developers 필드 사용)
+      setNewGame({ name: "", description: "", imageUrl: "", developers: "" });
+      await fetchGames();
     } catch (error) {
       console.error("게임 추가 실패:", error);
       alert("게임 추가에 실패했습니다.");
@@ -176,28 +190,28 @@ function AdminPage() {
                       {user.role}
                     </span>
                   </td>
-                  <td className="flex gap-2">
-                    <td className="flex flex-wrap gap-2">
-                      <button
-                        className="btn btn-sm btn-info"
-                        onClick={() => showQrCode(user.uuid)}
-                      >
-                        QR 보기
-                      </button>
-                      <button
-                        className="btn btn-sm btn-warning"
-                        onClick={() => handleResetPassword(user.uuid)}
-                      >
-                        비번 초기화
-                      </button>
-                      <button
-                        className="btn btn-sm btn-error"
-                        onClick={() => handleDeleteUser(user.uuid)}
-                      >
-                        삭제
-                      </button>
-                    </td>
+                  {/* --- 👇 중첩된 <td> 태그 오류 수정 --- */}
+                  <td className="flex flex-wrap gap-2">
+                    <button
+                      className="btn btn-sm btn-info"
+                      onClick={() => showQrCode(user.uuid)}
+                    >
+                      QR 보기
+                    </button>
+                    <button
+                      className="btn btn-sm btn-warning"
+                      onClick={() => handleResetPassword(user.uuid)}
+                    >
+                      비번 초기화
+                    </button>
+                    <button
+                      className="btn btn-sm btn-error"
+                      onClick={() => handleDeleteUser(user.uuid)}
+                    >
+                      삭제
+                    </button>
                   </td>
+                  {/* --- 👆 수정 끝 --- */}
                 </tr>
               ))}
             </tbody>
@@ -241,11 +255,13 @@ function AdminPage() {
           />
           <input
             type="text"
-            placeholder="소속 동아리"
+            placeholder="개발자 목록 (쉼표로 구분, 예: Club_이름)" // placeholder 변경
             className="input input-bordered"
             required
-            value={newGame.club}
-            onChange={(e) => setNewGame({ ...newGame, club: e.target.value })}
+            value={newGame.developers} // state 이름 변경
+            onChange={(e) =>
+              setNewGame({ ...newGame, developers: e.target.value })
+            }
           />
           <button type="submit" className="btn btn-primary">
             게임 추가
@@ -264,7 +280,8 @@ function AdminPage() {
               {games.map((game) => (
                 <tr key={game._id}>
                   <td>{game.name}</td>
-                  <td>{game.clubs}</td>
+                  {/* 👇 developers 배열을 쉼표로 연결하여 표시 */}
+                  <td>{game.developers.join(", ")}</td>
                   <td>
                     <button
                       className="btn btn-sm btn-error"

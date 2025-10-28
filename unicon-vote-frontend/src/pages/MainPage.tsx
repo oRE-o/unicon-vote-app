@@ -8,9 +8,10 @@ import VoteModal from "../components/VoteModal";
 import { jwtDecode } from "jwt-decode"; // 1. jwt-decode 임포트
 
 interface DecodedToken {
-  name: string;
   uuid: string;
-  club?: string; // 2. club 정보 optional 추가
+  _id: string;
+  name: string;
+  club?: string;
   role: "user" | "admin";
   iat: number;
   exp: number;
@@ -29,7 +30,12 @@ function MainPage() {
   const [userVotes, setUserVotes] = useState<Vote[]>([]);
   const [votingGame, setVotingGame] = useState<Game | null>(null);
   const [userName, setUserName] = useState("...");
-  const [userClub, setUserClub] = useState<string | undefined>(undefined); // 1. userClub state 추가
+  const [currentUserName, setCurrentUserName] = useState<string | undefined>(
+    undefined
+  );
+  const [currentUserClub, setCurrentUserClub] = useState<string | undefined>(
+    undefined
+  );
 
   const shuffleArray = <T,>(array: T[]): T[] => {
     const newArray = [...array]; // 원본 배열을 수정하지 않기 위해 복사
@@ -58,7 +64,10 @@ function MainPage() {
       if (token) {
         const decodedToken: DecodedToken = jwtDecode(token);
         setUserName(decodedToken.name);
-        setUserClub(decodedToken.club); // 2. 토큰에서 club 정보 추출
+
+        // --- 👇 userId (uuid)를 currentUserId state에 저장 ---
+        setCurrentUserName(decodedToken.name);
+        setCurrentUserClub(decodedToken.club);
       }
     } catch (error) {
       console.error("Invalid token:", error);
@@ -77,12 +86,11 @@ function MainPage() {
         criterion,
         medal,
       });
-      await fetchData(); // 성공 시 데이터 새로고침
-    } catch (error) {
+      await fetchData();
+    } catch (error: any) {
       console.error("투표 실패:", error);
-      alert(
-        "투표에 실패했습니다. 이미 사용한 메달이거나, 해당 게임의 동일 기준에 이미 투표했습니다."
-      );
+      const message = error.response?.data?.message || "투표에 실패했습니다.";
+      alert(message);
     }
   };
 
@@ -92,7 +100,7 @@ function MainPage() {
       await api.delete("/api/votes", {
         data: { gameId: votingGame._id, criterion },
       });
-      await fetchData(); // 성공 시 데이터 새로고침
+      await fetchData();
     } catch (error) {
       console.error("투표 취소 실패:", error);
     }
@@ -151,6 +159,9 @@ function MainPage() {
                 game={game}
                 voteCount={totalVotesByGame[game._id] || 0}
                 myVotes={votesByGame[game._id] || {}}
+                // --- 👇 currentUserId 전달 ---
+                currentUserName={currentUserName}
+                currentUserClub={currentUserClub}
                 onVoteClick={() => setVotingGame(game)}
               />
             ))}
@@ -169,7 +180,9 @@ function MainPage() {
         games={shuffleArray(games)}
         totalVotesByGame={totalVotesByGame}
         votesByGame={votesByGame}
-        userClub={userClub}
+        // --- 👇 GameList에 currentUserId 전달 (GameList가 GameCard로 다시 전달) ---
+        currentUserName={currentUserName}
+        currentUserClub={currentUserClub}
         onVoteClick={(game) => setVotingGame(game)}
       />
 
