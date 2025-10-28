@@ -7,6 +7,7 @@ export interface IGame extends Document {
   description: string;
   imageUrl: string;
   developers: string[];
+  category: "Challenger" | "Rookie";
 }
 
 const gameSchema: Schema = new Schema({
@@ -25,6 +26,11 @@ const gameSchema: Schema = new Schema({
   },
   developers: {
     type: [String], // 문자열 배열 타입
+    required: true,
+  },
+  category: {
+    type: String,
+    enum: ["Challenger", "Rookie"], // 허용 값 제한
     required: true,
   },
 });

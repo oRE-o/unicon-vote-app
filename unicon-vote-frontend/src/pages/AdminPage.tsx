@@ -25,6 +25,7 @@ function AdminPage() {
     description: "",
     imageUrl: "",
     developers: "",
+    category: "Challenger", // --- 👇 category state 추가 및 기본값 설정 ---
   });
 
   const fetchUsers = async () => {
@@ -89,8 +90,12 @@ function AdminPage() {
   const handleAddGame = async (event: React.FormEvent) => {
     event.preventDefault();
     // developers 필드가 비어있는지 확인
-    if (!newGame.name.trim() || !newGame.developers.trim()) {
-      alert("게임 이름과 개발자 목록은 필수입니다.");
+    if (
+      !newGame.name.trim() ||
+      !newGame.developers.trim() ||
+      !newGame.category
+    ) {
+      alert("게임 이름, 개발자 목록, 카테고리는 필수입니다.");
       return;
     }
     try {
@@ -107,7 +112,13 @@ function AdminPage() {
       });
 
       // 폼 초기화 (club 대신 developers 필드 사용)
-      setNewGame({ name: "", description: "", imageUrl: "", developers: "" });
+      setNewGame({
+        name: "",
+        description: "",
+        imageUrl: "",
+        developers: "",
+        category: "Challenger",
+      }); // 폼 초기화
       await fetchGames();
     } catch (error) {
       console.error("게임 추가 실패:", error);
@@ -253,6 +264,19 @@ function AdminPage() {
               setNewGame({ ...newGame, imageUrl: e.target.value })
             }
           />
+          <select
+            className="select select-bordered"
+            value={newGame.category}
+            onChange={(e) =>
+              setNewGame({
+                ...newGame,
+                category: e.target.value as "Challenger" | "Rookie",
+              })
+            }
+          >
+            <option value="Challenger">챌린저</option>
+            <option value="Rookie">루키</option>
+          </select>
           <input
             type="text"
             placeholder="개발자 목록 (쉼표로 구분, 예: Club_이름)" // placeholder 변경

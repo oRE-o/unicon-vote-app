@@ -15,6 +15,7 @@ interface GameCardProps {
   currentUserClub?: string;
   onVoteClick: () => void;
 }
+
 function GameCard({
   game,
   voteCount,
@@ -38,7 +39,8 @@ function GameCard({
   const isMyClubGame: boolean =
     !!userDeveloperKey &&
     game.developers.some((dev) => dev === userDeveloperKey); // 정확히 일치하는지 비교
-
+  const categoryColor =
+    game.category === "Challenger" ? "badge-error" : "badge-success";
   return (
     <div className="card bg-base-100 shadow-xl transition-transform duration-300 hover:scale-105 flex flex-col">
       <figure>
@@ -49,6 +51,9 @@ function GameCard({
         />
       </figure>
       <div className="card-body flex-grow">
+        <div className={`badge ${categoryColor} text-white self-start mb-2`}>
+          {game.category}
+        </div>
         <h2 className="card-title">{game.name}</h2>
         {/* --- 동아리 정보 표시 --- */}
         <div className="my-2 flex flex-wrap gap-1">

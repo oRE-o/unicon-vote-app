@@ -43,8 +43,27 @@ router.post("/users", async (req: Request, res: Response) => {
 // --- 게임 관리 ---
 // POST /api/admin/games : 새 게임 추가
 router.post("/games", async (req: Request, res: Response) => {
-  const { name, description, imageUrl } = req.body;
-  const newGame = new Game({ name, description, imageUrl });
+  const { name, description, imageUrl, category, developers } = req.body;
+  if (!name || !developers || !category) {
+    // 필수 필드에 category 추가
+    return res
+      .status(400)
+      .json({ message: "게임 이름, 개발자 목록, 카테고리는 필수입니다." });
+  }
+  const developersArray = Array.isArray(developers)
+    ? developers
+    : developers
+        .split(",")
+        .map((dev: string) => dev.trim())
+        .filter((dev: string) => dev);
+
+  const newGame = new Game({
+    name,
+    description,
+    imageUrl,
+    developers: developersArray,
+    category, // 모델에 전달
+  });
   await newGame.save();
   res.status(201).json(newGame);
 });
