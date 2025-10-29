@@ -54,22 +54,43 @@ function VoteModal({
         </button>
         <h3 className="font-bold text-lg mb-4">{game.name}에 투표하기</h3>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {" "}
+          {/* 간격 살짝 늘림 */}
           {CRITERIA.map(({ key, name }) => {
             const currentMedalForThisCriterion = votesForThisGame[key];
+            const isImpressive = key === "impressive"; // --- ✨ 1. '인상깊음' 항목인지 확인 ---
 
             return (
-              <div key={key}>
+              // --- ✨ 2. '인상깊음' 항목에 배경 및 패딩 추가 ---
+              <div
+                key={key}
+                className={`p-3 rounded-lg ${
+                  isImpressive ? "bg-primary/10 border border-primary/30" : ""
+                }`}
+              >
                 <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-lg">{name}</h4>
+                  <h4
+                    className={`font-semibold text-lg ${
+                      isImpressive ? "text-primary" : ""
+                    }`}
+                  >
+                    {name}
+                  </h4>{" "}
+                  {/* 강조 색상 */}
                   {currentMedalForThisCriterion && (
                     <span className="text-2xl">
                       {MEDAL_ICONS[currentMedalForThisCriterion]}
                     </span>
                   )}
+                  {/* --- ✨ 3. '인상깊음' 옆에 별표 추가 --- */}
+                  {isImpressive && (
+                    <span className="text-primary font-bold">
+                      * 주요 평가 항목
+                    </span>
+                  )}
                 </div>
 
-                {/* --- 👇 버튼 UI 수정 --- */}
                 <div className="flex gap-4 mt-2">
                   {MEDALS.map((medal) => {
                     const isMedalUsedOnAnotherGame =
@@ -111,6 +132,15 @@ function VoteModal({
                     );
                   })}
                 </div>
+
+                {/* --- ✨ 4. '인상깊음' 항목 아래에 안내 문구 추가 --- */}
+                {isImpressive && (
+                  <p className="text-xs text-base-content/70 mt-2 pl-1">
+                    🏆 "인상깊음" 항목은 주된 수상 순위 결정에 반영되며,
+                    <br /> 특별상은 그 외 부문 점수를 참고하여 각 부문별 하나의
+                    작품이 선정됩니다.
+                  </p>
+                )}
               </div>
             );
           })}
