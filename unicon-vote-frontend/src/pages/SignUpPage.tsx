@@ -10,6 +10,9 @@ const API_BASE_URL =
 function SignUpPage() {
   const [userId, setUserId] = useState("");
   const [userName, setUserName] = useState("");
+  const [initialNameFromServer, setInitialNameFromServer] = useState<
+    string | null
+  >(null); // --- ✨ 1. 서버에서 받은 '원본' 이름 저장 (null 가능) ---
   const [userRole, setUserRole] = useState(""); // 1. role state 추가
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -40,7 +43,7 @@ function SignUpPage() {
         const response = await axios.get(
           `${API_BASE_URL}/api/auth/status/${uuid}`
         );
-        const { name, role, isFirstAccess } = response.data;
+        const { name: fetchedName, role, isFirstAccess } = response.data;
 
         if (!isFirstAccess) {
           // 이미 등록된 사용자라면 로그인 페이지로 보냄
@@ -49,12 +52,17 @@ function SignUpPage() {
         }
 
         setUserId(uuid);
-        setUserName(name);
+        setInitialNameFromServer(fetchedName); // 서버 원본 이름 저장
         setUserRole(role); // 2. role state 설정
-        if (role === "guest") {
+        if (role === "guest" && !fetchedName) {
+          // 역할이 guest이고 서버에 이름이 없으면 -> "관람객"으로 시작 & 수정 가능
+          setUserName("관람객");
           setWelcomeMessage("방문객님, 환영해요!");
+          setWelcomeMessage2("이름과 비밀번호를 설정해주세요.");
         } else {
-          setWelcomeMessage(`${name}님, 환영해요!`);
+          // 역할이 guest가 아니거나, guest라도 서버에 이름이 있으면 -> 서버 이름 사용 & 수정 불가
+          setUserName(fetchedName || "이름 없음"); // 혹시 모를 null 대비
+          setWelcomeMessage(`${fetchedName || "방문객"}님, 환영해요!`);
         }
       } catch (err) {
         setError("사용자 정보를 불러오는 데 실패했습니다.");
@@ -94,6 +102,8 @@ function SignUpPage() {
       setError(errorMessage);
     }
   };
+  const isNameInputDisabled =
+    userRole !== "guest" || (userRole === "guest" && !!initialNameFromServer);
 
   return (
     <div className="min-h-screen bg-base-100 flex flex-col items-center justify-center gap-3 p-6">
@@ -136,11 +146,11 @@ function SignUpPage() {
         <label className="label mt-2">이름</label>
         <input
           type="text"
-          placeholder={userRole === "guest" ? "방문객" : userName}
+          placeholder={userName}
           className="input input-bordered w-full"
-          value={""}
+          value={userName}
           onChange={(e) => setUserName(e.target.value)}
-          disabled={userRole === "user"} // guest인 경우 이름 변경 불가
+          disabled={isNameInputDisabled} // guest인 경우 이름 변경 불가
         />
 
         <label className="label  mt-2">비밀번호</label>
