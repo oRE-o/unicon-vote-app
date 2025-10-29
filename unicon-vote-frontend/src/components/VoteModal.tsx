@@ -54,7 +54,7 @@ function VoteModal({
         </button>
         <h3 className="font-bold text-lg mb-4">{game.name}에 투표하기</h3>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {CRITERIA.map(({ key, name }) => {
             const currentMedalForThisCriterion = votesForThisGame[key];
             const isImpressive = key === "impressive";
@@ -62,31 +62,36 @@ function VoteModal({
             return (
               <div
                 key={key}
-                className={`p-3 rounded-lg ${
+                className={`p-2 rounded-lg ${
+                  /* p-2로 패딩 줄임 */
                   isImpressive ? "bg-primary/10 border border-primary/30" : ""
                 }`}
               >
-                {/* --- 헤드라인 중앙 정렬 및 아이콘 삭제 (변경 없음) --- */}
-                <div className="flex flex-col items-center gap-1 mb-2">
+                {/* --- 헤드라인 (변경 없음) --- */}
+                <div className="flex flex-col items-center gap-0 mb-1">
+                  {" "}
+                  {/* gap-0, mb-1로 더 줄임 */}
                   <h4
-                    className={`font-semibold text-xl ${
+                    className={`font-semibold text-lg ${
+                      /* 글자 크기 살짝 줄임 */
                       isImpressive ? "text-primary" : ""
                     }`}
                   >
                     {name}
                   </h4>
                   {isImpressive && (
-                    <span className="text-primary font-bold text-sm">
-                      * 주요 평가 항목
+                    <span className="text-primary font-bold text-xs">
+                      {" "}
+                      {/* 글자 크기 조정 */}* 주요 평가 항목
                     </span>
                   )}
                   <div className="divider w-1/2 mx-auto my-0"></div>
                 </div>
 
-                {/* --- 버튼 UI 및 정렬 수정 --- */}
-                <div className="flex justify-center gap-3 mt-3">
+                {/* --- 👇 버튼 크기 및 간격 또 줄임 --- */}
+                <div className="flex justify-center gap-2 mt-2">
                   {" "}
-                  {/* gap-3로 살짝 줄임 */}
+                  {/* gap-2, mt-2로 줄임 */}
                   {MEDALS.map((medal) => {
                     const isMedalUsedOnAnotherGame =
                       usedMedals[`${key}-${medal}`] &&
@@ -100,8 +105,8 @@ function VoteModal({
                       ? `${medal} (선택 취소)`
                       : medal;
 
-                    // --- 👇 버튼 크기 살짝 줄임 (w-14 h-14, text-2xl) ---
-                    let buttonClass = `btn btn-circle text-2xl p-2 w-14 h-14`;
+                    // --- 👇 버튼 크기 또 줄임 (w-12 h-12, text-xl) ---
+                    let buttonClass = `btn btn-circle text-xl p-2 w-12 h-12`;
 
                     if (isSelected) {
                       buttonClass += ` ${MEDAL_COLORS[medal]} border-2`;
@@ -142,7 +147,9 @@ function VoteModal({
                 </div>
 
                 {isImpressive && (
-                  <p className="text-xs text-base-content/70 mt-2 text-center">
+                  <p className="text-xs text-base-content/70 mt-1 text-center">
+                    {" "}
+                    {/* mt-1로 줄임 */}
                     🏆 "인상깊음" 항목은 주된 수상 순위 결정에 반영되며,
                     <br /> 특별상은 그 외 부문 점수를 참고하여 각 부문당 한 팀이
                     선정됩니다!
@@ -153,7 +160,9 @@ function VoteModal({
           })}
         </div>
 
-        <div className="modal-action">
+        <div className="modal-action mt-4">
+          {" "}
+          {/* mt-4로 줄임 */}
           <button className="btn" onClick={onClose}>
             완료
           </button>
