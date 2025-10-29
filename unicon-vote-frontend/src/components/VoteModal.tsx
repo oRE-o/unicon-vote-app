@@ -59,10 +59,9 @@ function VoteModal({
           {/* 간격 살짝 늘림 */}
           {CRITERIA.map(({ key, name }) => {
             const currentMedalForThisCriterion = votesForThisGame[key];
-            const isImpressive = key === "impressive"; // --- ✨ 1. '인상깊음' 항목인지 확인 ---
+            const isImpressive = key === "impressive";
 
             return (
-              // --- ✨ 2. '인상깊음' 항목에 배경 및 패딩 추가 ---
               <div
                 key={key}
                 className={`p-3 rounded-lg ${
@@ -76,14 +75,12 @@ function VoteModal({
                     }`}
                   >
                     {name}
-                  </h4>{" "}
-                  {/* 강조 색상 */}
+                  </h4>
                   {currentMedalForThisCriterion && (
                     <span className="text-2xl">
                       {MEDAL_ICONS[currentMedalForThisCriterion]}
                     </span>
                   )}
-                  {/* --- ✨ 3. '인상깊음' 옆에 별표 추가 --- */}
                   {isImpressive && (
                     <span className="text-primary font-bold">
                       * 주요 평가 항목
@@ -91,17 +88,40 @@ function VoteModal({
                   )}
                 </div>
 
-                <div className="flex gap-4 mt-2">
+                {/* --- 👇 버튼 UI 및 정렬 수정 --- */}
+                <div className="flex justify-center gap-4 mt-3">
+                  {" "}
+                  {/* justify-center 추가, mt 살짝 증가 */}
                   {MEDALS.map((medal) => {
                     const isMedalUsedOnAnotherGame =
                       usedMedals[`${key}-${medal}`] &&
                       usedMedals[`${key}-${medal}`].gameId !== game._id;
 
+                    const isSelected = currentMedalForThisCriterion === medal;
+
                     const tooltipText = isMedalUsedOnAnotherGame
                       ? "다른 게임에 사용"
-                      : currentMedalForThisCriterion === medal
+                      : isSelected
                       ? `${medal} (선택 취소)`
                       : medal;
+
+                    // 기본 버튼 스타일 (크기 키움)
+                    let buttonClass = `btn btn-circle text-3xl p-2 w-16 h-16`; // 기본 크기 및 텍스트 크기 증가, 패딩/너비/높이 조절
+
+                    // 선택된 메달 스타일
+                    if (isSelected) {
+                      buttonClass += ` ${MEDAL_COLORS[medal]} text-white border-2`; // 배경색, 흰 글씨, 테두리
+                    } else {
+                      buttonClass += ` btn-outline border-2`; // 외곽선만
+                    }
+
+                    // 비활성화 시 스타일
+                    const isDisabled =
+                      isMedalUsedOnAnotherGame ||
+                      (!!currentMedalForThisCriterion && !isSelected);
+                    if (isDisabled) {
+                      buttonClass += ` btn-disabled opacity-50`; // 비활성화 스타일
+                    }
 
                     return (
                       <div
@@ -110,20 +130,10 @@ function VoteModal({
                         data-tip={tooltipText}
                       >
                         <button
-                          className={`btn btn-circle text-2xl ${
-                            currentMedalForThisCriterion === medal
-                              ? MEDAL_COLORS[medal]
-                              : "btn-outline"
-                          }`}
-                          disabled={
-                            isMedalUsedOnAnotherGame ||
-                            (!!currentMedalForThisCriterion &&
-                              currentMedalForThisCriterion !== medal)
-                          }
+                          className={buttonClass}
+                          disabled={isDisabled}
                           onClick={() =>
-                            currentMedalForThisCriterion === medal
-                              ? onCancelVote(key)
-                              : onVote(key, medal)
+                            isSelected ? onCancelVote(key) : onVote(key, medal)
                           }
                         >
                           {MEDAL_ICONS[medal]}
@@ -132,13 +142,13 @@ function VoteModal({
                     );
                   })}
                 </div>
+                {/* --- 👆 버튼 UI 및 정렬 수정 끝 --- */}
 
-                {/* --- ✨ 4. '인상깊음' 항목 아래에 안내 문구 추가 --- */}
                 {isImpressive && (
                   <p className="text-xs text-base-content/70 mt-2 pl-1">
                     🏆 "인상깊음" 항목은 주된 수상 순위 결정에 반영되며,
-                    <br /> 특별상은 그 외 부문 점수를 참고하여 각 부문별 하나의
-                    작품이 선정됩니다.
+                    <br /> 특별상은 그 외 부문 점수를 참고하여 각 부문당 한 팀이
+                    선정됩니다!
                   </p>
                 )}
               </div>
