@@ -47,7 +47,7 @@ function GameCard({
         <img
           src={game.imageUrl}
           alt={game.name}
-          className="h-56 w-full object-cover"
+          className="h-56 w-full object-contain"
         />
       </figure>
       <div className="card-body flex-grow">
