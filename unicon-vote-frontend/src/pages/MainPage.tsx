@@ -228,8 +228,9 @@ function MainPage() {
       </div>
 
       {/* --- 👇 5. 모바일 하단 고정 내비게이션 --- */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 bg-base-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:hidden">
-        <div className="join">
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 md:hidden">
+        {/* join 클래스에 rounded-full과 shadow-lg를 추가해서 알약처럼 동동! */}
+        <div className="join rounded-full shadow-lg bg-base-100">
           <button
             className={`join-item btn btn-primary ${
               currentView === "all" ? "" : "btn-outline"
