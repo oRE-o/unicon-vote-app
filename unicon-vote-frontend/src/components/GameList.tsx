@@ -61,15 +61,6 @@ function GameList({
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">🎲 전체 게임 목록</h2>
-      <div className="form-control mb-8">
-        <input
-          type="text"
-          placeholder="게임 이름으로 검색..."
-          className="input input-bordered w-full md:w-1/2"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
       <div className="flex flex-col md:flex-row gap-4 mb-8 p-4 bg-base-200 rounded-lg">
         {/* 검색창 */}
         <input
