@@ -107,6 +107,11 @@ function MainPage() {
     }
   };
 
+  const handleViewChange = (view: "all" | "voted") => {
+    setCurrentView(view);
+    window.scrollTo(0, 0); // 뷰 변경 시 스크롤을 맨 위로! 슝~!
+  };
+
   const { votesByGame, usedMedals, totalVotesByGame } = useMemo(() => {
     const votesByGame: Record<string, Record<string, string>> = {};
     const usedMedals: Record<string, { gameId: string }> = {};
@@ -261,7 +266,7 @@ function MainPage() {
             className={`join-item btn btn-primary ${
               currentView === "all" ? "" : "btn-outline"
             } rounded-l-full`} // <-- 💖 왼쪽 둥글게!
-            onClick={() => setCurrentView("all")}
+            onClick={() => handleViewChange("all")} // <-- ✨ 수정
           >
             🎲 모든 게임
           </button>
@@ -269,7 +274,7 @@ function MainPage() {
             className={`join-item btn btn-primary ${
               currentView === "voted" ? "" : "btn-outline"
             } rounded-r-full`} // <-- 💖 오른쪽 둥글게!
-            onClick={() => setCurrentView("voted")}
+            onClick={() => handleViewChange("voted")} // <-- ✨ 수정
           >
             🗳️ 투표한 게임
           </button>
