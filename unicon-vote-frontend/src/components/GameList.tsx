@@ -61,18 +61,23 @@ function GameList({
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">🎲 전체 게임 목록</h2>
-      <div className="flex flex-col md:flex-row gap-4 mb-8 p-4 bg-base-200 rounded-lg">
-        {/* 검색창 */}
+      <p className="text-sm text-base-content/70 mb-2">
+        필터를 눌러 원하는 게임을 찾아보세요!
+      </p>
+
+      {/* --- 👇 검색창 및 필터 UI (레이아웃 수정) --- */}
+      <div className="flex flex-col md:flex-row md:flex-wrap md:items-center gap-4 mb-8 p-4 bg-base-200 rounded-lg">
+        {/* 검색창 (너비 조정) */}
         <input
           type="text"
           placeholder="게임 이름으로 검색..."
-          className="input input-bordered w-full md:flex-grow"
+          className="input input-bordered w-full md:w-auto md:flex-grow" // flex-grow로 유연하게
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-
-        {/* 카테고리 필터 (버튼 그룹) */}
-        <div className="btn-group">
+        
+        {/* 카테고리 필터 (버튼 그룹 및 색상 추가) */}
+        <div className="btn-group w-full md:w-auto"> {/* 너비 조정 */}
           <button
             className={`btn ${categoryFilter === "All" ? "btn-active" : ""}`}
             onClick={() => setCategoryFilter("All")}
@@ -80,15 +85,19 @@ function GameList({
             전체
           </button>
           <button
+            // --- 👇 챌린저 버튼 색상/활성 상태 ---
             className={`btn ${
-              categoryFilter === "Challenger" ? "btn-active" : ""
+              categoryFilter === "Challenger" ? "btn-error" : ""
             }`}
             onClick={() => setCategoryFilter("Challenger")}
           >
             챌린저
           </button>
           <button
-            className={`btn ${categoryFilter === "Rookie" ? "btn-active" : ""}`}
+            // --- 👇 루키 버튼 색상/활성 상태 ---
+            className={`btn ${
+              categoryFilter === "Rookie" ? "btn-success" : ""
+            }`}
             onClick={() => setCategoryFilter("Rookie")}
           >
             루키
@@ -97,7 +106,7 @@ function GameList({
 
         {/* 동아리 필터 (Select 드롭다운) */}
         <select
-          className="select select-bordered w-full md:w-auto"
+          className="select select-bordered w-full md:w-auto" // 너비 조정
           value={clubFilter}
           onChange={(e) => setClubFilter(e.target.value)}
         >
