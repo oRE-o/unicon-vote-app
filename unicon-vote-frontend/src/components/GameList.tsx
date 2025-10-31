@@ -67,17 +67,10 @@ function GameList({
 
       {/* --- 👇 검색창 및 필터 UI (레이아웃 수정) --- */}
       <div className="flex flex-col md:flex-row md:flex-wrap md:items-center gap-4 mb-8 p-4 bg-base-200 rounded-lg">
-        {/* 검색창 (너비 조정) */}
-        <input
-          type="text"
-          placeholder="게임 이름으로 검색..."
-          className="input input-bordered w-full md:w-auto md:flex-grow" // flex-grow로 유연하게
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        
         {/* 카테고리 필터 (버튼 그룹 및 색상 추가) */}
-        <div className="btn-group w-full md:w-auto"> {/* 너비 조정 */}
+        <div className="btn-group w-full md:w-auto">
+          {" "}
+          {/* 너비 조정 */}
           <button
             className={`btn ${categoryFilter === "All" ? "btn-active" : ""}`}
             onClick={() => setCategoryFilter("All")}
@@ -103,7 +96,14 @@ function GameList({
             루키
           </button>
         </div>
-
+        {/* 검색창 (너비 조정) */}
+        <input
+          type="text"
+          placeholder="게임 이름으로 검색..."
+          className="input input-bordered w-full md:w-auto md:flex-grow" // flex-grow로 유연하게
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         {/* 동아리 필터 (Select 드롭다운) */}
         <select
           className="select select-bordered w-full md:w-auto" // 너비 조정

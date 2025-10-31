@@ -36,6 +36,7 @@ function MainPage() {
   const [currentUserClub, setCurrentUserClub] = useState<string | undefined>(
     undefined
   );
+  const [currentView, setCurrentView] = useState<"all" | "voted">("all");
 
   const shuffleArray = <T,>(array: T[]): T[] => {
     const newArray = [...array]; // 원본 배열을 수정하지 않기 위해 복사
@@ -126,7 +127,7 @@ function MainPage() {
   }, [games, totalVotesByGame]); // games나 totalVotesByGame이 바뀔 때만 다시 계산
 
   return (
-    <div className="p-6 md:p-10 bg-base-200 min-h-screen">
+    <div className="p-6 md:p-10 bg-base-200 min-h-screen pb-24 md:pb-10">
       <header className="text-center mb-10">
         <SplitText
           text={`안녕하세요, ${userName}님!`}
@@ -149,44 +150,106 @@ function MainPage() {
         </p>
       </header>
 
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-4">🗳️ 내가 투표한 게임</h2>
-        {votedGames.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {votedGames.map((game) => (
-              <GameCard
-                key={game._id}
-                game={game}
-                voteCount={totalVotesByGame[game._id] || 0}
-                myVotes={votesByGame[game._id] || {}}
-                // --- 👇 currentUserId 전달 ---
-                currentUserName={currentUserName}
-                currentUserClub={currentUserClub}
-                onVoteClick={() => setVotingGame(game)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="card bg-base-100/50 p-8 text-center">
-            <p className="text-base-content/60">아직 투표한 게임이 없어요.</p>
-          </div>
+      <div className="hidden md:block">
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold mb-4">🗳️ 내가 투표한 게임</h2>
+          {votedGames.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {votedGames.map((game) => (
+                <GameCard
+                  key={game._id}
+                  game={game}
+                  voteCount={totalVotesByGame[game._id] || 0}
+                  myVotes={votesByGame[game._id] || {}}
+                  currentUserName={currentUserName}
+                  currentUserClub={currentUserClub}
+                  onVoteClick={() => setVotingGame(game)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="card bg-base-100/50 p-8 text-center">
+              <p className="text-base-content/60">아직 투표한 게임이 없어요.</p>
+            </div>
+          )}
+        </section>
+
+        <div className="divider my-8"></div>
+
+        <GameList
+          games={shuffleArray(games)}
+          totalVotesByGame={totalVotesByGame}
+          votesByGame={votesByGame}
+          currentUserName={currentUserName}
+          currentUserClub={currentUserClub}
+          onVoteClick={(game) => setVotingGame(game)}
+        />
+      </div>
+
+      {/* --- 👇 4. 모바일 뷰 (토글 콘텐츠) --- */}
+      <div className="block md:hidden">
+        {currentView === "all" && (
+          <GameList
+            games={shuffleArray(games)}
+            totalVotesByGame={totalVotesByGame}
+            votesByGame={votesByGame}
+            currentUserName={currentUserName}
+            currentUserClub={currentUserClub}
+            onVoteClick={(game) => setVotingGame(game)}
+          />
         )}
-      </section>
 
-      <div className="divider my-8"></div>
+        {currentView === "voted" && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">🗳️ 내가 투표한 게임</h2>
+            {votedGames.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {votedGames.map((game) => (
+                  <GameCard
+                    key={game._id}
+                    game={game}
+                    voteCount={totalVotesByGame[game._id] || 0}
+                    myVotes={votesByGame[game._id] || {}}
+                    currentUserName={currentUserName}
+                    currentUserClub={currentUserClub}
+                    onVoteClick={() => setVotingGame(game)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="card bg-base-100/50 p-8 text-center">
+                <p className="text-base-content/60">
+                  아직 투표한 게임이 없어요.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+      </div>
 
-      {/* --- GameList에는 전체 게임 목록을 그대로 전달 --- */}
-      <GameList
-        games={shuffleArray(games)}
-        totalVotesByGame={totalVotesByGame}
-        votesByGame={votesByGame}
-        // --- 👇 GameList에 currentUserId 전달 (GameList가 GameCard로 다시 전달) ---
-        currentUserName={currentUserName}
-        currentUserClub={currentUserClub}
-        onVoteClick={(game) => setVotingGame(game)}
-      />
+      {/* --- 👇 5. 모바일 하단 고정 내비게이션 --- */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 bg-base-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:hidden">
+        <div className="join">
+          <button
+            className={`join-item btn btn-primary ${
+              currentView === "all" ? "" : "btn-outline"
+            }`}
+            onClick={() => setCurrentView("all")}
+          >
+            🎲 모든 게임
+          </button>
+          <button
+            className={`join-item btn btn-primary ${
+              currentView === "voted" ? "" : "btn-outline"
+            }`}
+            onClick={() => setCurrentView("voted")}
+          >
+            🗳️ 투표한 게임
+          </button>
+        </div>
+      </div>
 
-      {/* --- votingGame state에 따라 VoteModal을 렌더링 --- */}
+      {/* --- (VoteModal 렌더링은 동일) --- */}
       {votingGame && (
         <VoteModal
           isOpen={!!votingGame}
