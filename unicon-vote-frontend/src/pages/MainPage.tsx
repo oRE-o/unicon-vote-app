@@ -227,6 +227,32 @@ function MainPage() {
         )}
       </div>
 
+      <footer className="footer footer-center p-4 bg-base-300 text-base-content absolute bottom-0 w-full">
+        <aside>
+          <p>
+            Developed with{" "}
+            <a
+              href="https://youtu.be/mco3UX9SqDA?list=RDmco3UX9SqDA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link link-hover font-bold"
+            >
+              migu
+            </a>{" "}
+            by{" "}
+            <a
+              href="https://github.com/ore-o"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link link-hover font-bold"
+            >
+              ore-o
+            </a>
+            <br />© 2025 UNICON Vote Project. All rights reserved.
+          </p>
+        </aside>
+      </footer>
+
       {/* --- 👇 5. 모바일 하단 고정 내비게이션 --- */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 md:hidden">
         {/* join 클래스에 rounded-full과 shadow-lg를 추가해서 알약처럼 동동! */}
@@ -234,7 +260,7 @@ function MainPage() {
           <button
             className={`join-item btn btn-primary ${
               currentView === "all" ? "" : "btn-outline"
-            }`}
+            } rounded-l-full`} // <-- 💖 왼쪽 둥글게!
             onClick={() => setCurrentView("all")}
           >
             🎲 모든 게임
@@ -242,7 +268,7 @@ function MainPage() {
           <button
             className={`join-item btn btn-primary ${
               currentView === "voted" ? "" : "btn-outline"
-            }`}
+            } rounded-r-full`} // <-- 💖 오른쪽 둥글게!
             onClick={() => setCurrentView("voted")}
           >
             🗳️ 투표한 게임
