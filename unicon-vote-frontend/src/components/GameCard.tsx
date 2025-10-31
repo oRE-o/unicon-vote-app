@@ -43,11 +43,11 @@ function GameCard({
     game.category === "Challenger" ? "badge-error" : "badge-success";
   return (
     <div className="card bg-base-100 shadow-xl transition-transform duration-300 hover:scale-105 flex flex-col">
-      <figure>
+      <figure className="aspect-video"> {/* 16:9 비율 (aspect-video) 클래스 추가 */}
         <img
           src={game.imageUrl}
           alt={game.name}
-          className="h-56 w-full object-cover"
+          className="h-full w-full object-cover" // 이미지가 16:9 컨테이너를 꽉 채우도록 수정
         />
       </figure>
       <div className="card-body flex-grow">
