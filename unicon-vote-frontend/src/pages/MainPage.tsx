@@ -227,7 +227,7 @@ function MainPage() {
         )}
       </div>
 
-      <footer className="footer footer-center p-4 bg-base-300 text-base-content absolute bottom-0 w-full">
+      <footer className="footer footer-center p-4 bg-base-300 text-base-content mt-16">
         <aside>
           <p>
             Developed with{" "}
