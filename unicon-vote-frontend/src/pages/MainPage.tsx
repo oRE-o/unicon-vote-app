@@ -215,7 +215,7 @@ function MainPage() {
           다시 투표하기 버튼을 눌러 언제든지 투표를 수정할 수 있어요.
         </p>
       </header>
-      {showCountdown && (
+      {/* {showCountdown && (
         <div className="mt-6 p-4 bg-base-100 rounded-lg shadow-inner max-w-md mx-auto">
           <p className="font-semibold text-lg text-primary">
             투표 가능 시간이{" "}
@@ -228,7 +228,7 @@ function MainPage() {
             남은 메달을 전부 사용해주세요. 시간이 지나면 투표가 마감됩니다!
           </p>
         </div>
-      )}
+      )} */}
 
       <div className="hidden md:block">
         <section className="mb-12">
