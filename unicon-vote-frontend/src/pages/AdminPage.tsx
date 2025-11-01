@@ -80,11 +80,11 @@ function AdminPage() {
     };
 
     fetchVoterCount(); // 처음에 한 번 바로 실행
-    fetchUserStats(); // 💖 추가
+    fetchUserStats();
 
     const intervalId = setInterval(() => {
       fetchVoterCount();
-      fetchUserStats(); // 💖 추가
+      fetchUserStats(); //
     }, 5000); // 5000ms = 5초
 
     return () => clearInterval(intervalId); // 컴포넌트 언마운트 시 타이머 청소
@@ -305,9 +305,22 @@ function AdminPage() {
               현재 투표 참여자 수
             </div>
             <div className="stat-value">{voterCount}명</div>
-            <div className="stat-desc">5초마다 갱신 중...</div>
+            <div className="stat-desc text-primary-content/60">
+              5초마다 갱신 중...
+            </div>
+          </div>
+
+          <div className="stat">
+            <div className="stat-title text-primary-content/80">
+              비밀번호 설정 계정
+            </div>
+            <div className="stat-value">{totalPasswordCount}명</div>
+            <div className="stat-desc text-primary-content/60">
+              User: {userPasswordCount} | Guest: {guestPasswordCount}
+            </div>
           </div>
         </div>
+
         <button
           className="btn btn-success"
           onClick={handleDownloadResults}
