@@ -37,8 +37,8 @@ function MainPage() {
     undefined
   );
   const [currentView, setCurrentView] = useState<"all" | "voted">("all");
-  const [countdownText, setCountdownText] = useState("시간 계산 중...");
-  const [showCountdown, setShowCountdown] = useState(true); // 💖 타이머 표시 여부!
+  // const [countdownText, setCountdownText] = useState("시간 계산 중...");
+  // const [showCountdown, setShowCountdown] = useState(true); // 💖 타이머 표시 여부!
 
   const shuffleArray = <T,>(array: T[]): T[] => {
     const newArray = [...array]; // 원본 배열을 수정하지 않기 위해 복사
