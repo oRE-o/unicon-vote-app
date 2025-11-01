@@ -1,7 +1,7 @@
 import express, { Request, Response, Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import User from "../models/userModel.js";
-import Game from "../models/gameModel.js"; // Game 모델 import
+import User, { IUser } from "../models/userModel.js";
+import Game, { IGame } from "../models/gameModel.js"; // Game 모델 import
 import Vote from "../models/voteModel.js"; // Game 모델 import
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { adminMiddleware } from "../middleware/adminMiddleware.js"; // 관리자 미들웨어 import
@@ -106,15 +106,14 @@ router.delete("/:uuid", async (req: Request, res: Response) => {
 
 router.get("/votes/results", async (req: Request, res: Response) => {
   try {
-    // 1. 모든 게임 정보 가져오기 (이름, 카테고리 등)
-    const games = (await Game.find({})) as any[];
-    // 2. 모든 투표 정보 가져오기
+    // --- 👇 💖 2. 여기에 타입을 짠! 하고 명시해줘요! 💖 ---
+    const games: IGame[] = await Game.find({});
     const votes = await Vote.find({});
 
-    // 3. 게임별 점수 집계용 객체 초기화
     const results: Record<string, any> = {};
     games.forEach((game) => {
-      results[game._id.toString()] = {
+      // 💖 이제 game._id가 'unknown'이 아니에요!
+      results[String(game._id)] = {
         gameName: game.name,
         category: game.category,
         impressive: { gold: 0, silver: 0, bronze: 0, score: 0 },
@@ -125,22 +124,21 @@ router.get("/votes/results", async (req: Request, res: Response) => {
       };
     });
 
-    // 4. 투표 데이터 순회하며 점수 계산 (금: 3점, 은: 2점, 동: 1점)
+    // (점수 계산 로직은 동일)
     votes.forEach((vote) => {
       const gameId = vote.game.toString();
       if (results[gameId] && results[gameId][vote.criterion]) {
-        results[gameId][vote.criterion][vote.medal]++; // 메달 개수 증가
+        results[gameId][vote.criterion][vote.medal]++;
         let scoreToAdd = 0;
         if (vote.medal === "gold") scoreToAdd = 3;
         else if (vote.medal === "silver") scoreToAdd = 2;
         else if (vote.medal === "bronze") scoreToAdd = 1;
 
-        results[gameId][vote.criterion].score += scoreToAdd; // 부문 점수 합산
-        results[gameId].totalScore += scoreToAdd; // 총점 합산
+        results[gameId][vote.criterion].score += scoreToAdd;
+        results[gameId].totalScore += scoreToAdd;
       }
     });
 
-    // 5. 집계 결과를 배열 형태로 변환하여 반환
     const finalResults = Object.values(results);
     res.status(200).json(finalResults);
   } catch (error) {
@@ -148,33 +146,60 @@ router.get("/votes/results", async (req: Request, res: Response) => {
     res.status(500).json({ message: "투표 결과 집계 중 오류 발생" });
   }
 });
+
 router.get("/votes/by-user", async (req: Request, res: Response) => {
   try {
-    // 1. 모든 투표를 가져오면서, user와 game 정보를 함께 불러옵니다 (populate).
-    const votes = await Vote.find({})
-      .populate<{ user: typeof User.prototype }>("user", "name club") // user 컬렉션에서 name과 club만 가져옴
-      .populate<{ game: typeof Game.prototype }>("game", "name"); // game 컬렉션에서 name만 가져옴
+    const votes = await Vote.find({});
+    // --- 👇 💖 3. 여기도 타입을 짠! 하고 명시해줘요! 💖 ---
+    const users: IUser[] = await User.find({});
+    const games: IGame[] = await Game.find({});
 
-    // 2. 결과를 가공하여 필요한 정보만 추출
-    const results = votes.map((vote) => {
-      // populate된 user/game 정보가 없을 경우 대비 (데이터 정합성 문제)
-      const userName = vote.user ? vote.user.name : "알 수 없는 사용자";
-      const userClub = vote.user ? vote.user.club || "외부인" : "알 수 없음";
-      const gameName = vote.game ? vote.game.name : "알 수 없는 게임";
+    // 💖 이제 u._id 와 g._id 가 'unknown'이 아니에요!
+    const userMap = new Map(
+      users.map((u: IUser & { _id: any }) => [u._id.toString(), { name: u.name, club: u.club }])
+    );
+    const gameMap = new Map(
+      games.map((g) => [
+        (g._id as string).toString(),
+        { name: g.name, developers: g.developers },
+      ])
+    );
 
-      return {
-        userName: userName,
-        userClub: userClub,
-        gameName: gameName,
-        criterion: vote.criterion,
-        medal: vote.medal,
-      };
-    });
+    // (데이터 조합 로직은 동일)
+    const finalResults = votes
+      .map((vote) => {
+        const user = userMap.get(vote.user.toString());
+        const game = gameMap.get(vote.game.toString());
 
-    res.status(200).json(results);
+        if (!user || !game) {
+          return null;
+        }
+
+        let isOwnClubVote = false;
+        if (user.club) {
+          const gameClubs = game.developers.map((dev) => dev.split("_")[0]);
+
+          if (gameClubs.includes(user.club)) {
+            isOwnClubVote = true;
+          }
+        }
+
+        return {
+          userName: user.name,
+          userClub: user.club || "N/A",
+          gameName: game.name,
+          criterion: vote.criterion,
+          medal: vote.medal,
+          isOwnClubVote: isOwnClubVote,
+        };
+      })
+      .filter(Boolean);
+
+    res.status(200).json(finalResults);
   } catch (error) {
-    console.error("사용자별 투표 내역 조회 실패:", error);
-    res.status(500).json({ message: "사용자별 투표 내역 조회 중 오류 발생" });
+    console.error("사용자별 투표 내역 집계 실패:", error);
+    res.status(500).json({ message: "사용자별 투표 내역 집계 중 오류 발생" });
   }
 });
+
 export default router;

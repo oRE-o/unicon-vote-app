@@ -23,12 +23,13 @@ interface VoteResult {
   polished: { gold: number; silver: number; bronze: number; score: number };
   totalScore: number;
 }
-interface UserVoteDetail {
+interface UserVoteRecord {
   userName: string;
   userClub: string;
   gameName: string;
   criterion: string;
   medal: string;
+  isOwnClubVote: boolean;
 }
 
 function AdminPage() {
@@ -205,37 +206,51 @@ function AdminPage() {
   const handleDownloadUserVotes = async () => {
     setIsDownloadingUserVotes(true);
     try {
-      const response = await api.get<UserVoteDetail[]>(
+      const response = await api.get<UserVoteRecord[]>(
         "/api/admin/votes/by-user"
       );
-      const userVotes = response.data;
+      const results = response.data;
 
-      // 1. 데이터를 엑셀 시트 형식에 맞게 가공 (컬럼명 지정)
-      const sheetData = userVotes.map((vote) => ({
-        "사용자 이름": vote.userName,
-        소속: vote.userClub,
-        "게임 이름": vote.gameName,
-        "평가 기준": vote.criterion,
-        메달: vote.medal,
+      // --- 시트 2: 사용자별 요약 데이터 생성 ---
+      const userSummary: Record<
+        string,
+        { totalVotes: number; ownClubVotes: number }
+      > = {};
+      results.forEach((vote) => {
+        if (!userSummary[vote.userName]) {
+          userSummary[vote.userName] = { totalVotes: 0, ownClubVotes: 0 };
+        }
+        userSummary[vote.userName].totalVotes++;
+        if (vote.isOwnClubVote) {
+          userSummary[vote.userName].ownClubVotes++; // 본인 동아리 투표 수
+        }
+      });
+      const summarySheetData = Object.keys(userSummary)
+        .map((userName) => ({
+          "사용자 이름": userName,
+          "총 투표 수": userSummary[userName].totalVotes,
+          "본인 동아리 투표 수": userSummary[userName].ownClubVotes,
+        }))
+        .sort((a, b) => b["총 투표 수"] - a["총 투표 수"]);
+
+      // --- 시트 1: 상세 내역 데이터 생성 ---
+      const detailSheetData = results.map((item) => ({
+        "사용자 이름": item.userName,
+        "소속 동아리": item.userClub,
+        "게임 이름": item.gameName,
+        "평가 기준": item.criterion,
+        메달: item.medal,
+        "본인 동아리 투표": item.isOwnClubVote ? "O" : "X", // O/X로 표시
       }));
 
-      // 2. 엑셀 워크북 생성
+      // 엑셀 워크북 생성 및 시트 2개 추가
       const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      const wsSummary = XLSX.utils.json_to_sheet(summarySheetData);
+      const wsDetail = XLSX.utils.json_to_sheet(detailSheetData);
+      XLSX.utils.book_append_sheet(workbook, wsSummary, "사용자별 요약"); // 시트 1
+      XLSX.utils.book_append_sheet(workbook, wsDetail, "전체 투표 상세 내역"); // 시트 2
 
-      // 컬럼 너비 자동 조절 (선택 사항)
-      const cols = Object.keys(sheetData[0] || {}).map((key) => ({
-        wch: Math.max(
-          key.length,
-          ...sheetData.map((row) => String(row[key as keyof typeof row]).length)
-        ),
-      }));
-      worksheet["!cols"] = cols;
-
-      XLSX.utils.book_append_sheet(workbook, worksheet, "사용자별 투표 내역");
-
-      // 3. 파일 다운로드 트리거
-      XLSX.writeFile(workbook, "unicon_user_vote_details.xlsx");
+      XLSX.writeFile(workbook, "unicon_user_vote_records.xlsx");
     } catch (error) {
       console.error("사용자별 투표 내역 다운로드 실패:", error);
       alert("사용자별 투표 내역 다운로드에 실패했습니다.");
@@ -243,6 +258,7 @@ function AdminPage() {
       setIsDownloadingUserVotes(false);
     }
   };
+
   return (
     <div className="p-8">
       <h1 className="text-4xl font-bold mb-8">관리자 대시보드</h1>
