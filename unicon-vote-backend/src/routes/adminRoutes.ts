@@ -104,6 +104,20 @@ router.delete("/:uuid", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/votes/voter-count", async (req: Request, res: Response) => {
+  try {
+    // 'Vote' 컬렉션에서 'user' 필드의 고유한(distinct) 값들을 찾아요!
+    // (이게 바로 고유한 투표자 UUID/ID 목록이랍니다!)
+    const distinctVoters = await Vote.distinct("user");
+
+    // 고유한 유저 ID의 개수를 슝~ 보내줘요!
+    res.status(200).json({ voterCount: distinctVoters.length });
+  } catch (error) {
+    console.error("투표자 수 집계 실패:", error);
+    res.status(500).json({ message: "투표자 수 집계 중 오류 발생" });
+  }
+});
+
 router.get("/votes/results", async (req: Request, res: Response) => {
   try {
     // --- 👇 💖 2. 여기에 타입을 짠! 하고 명시해줘요! 💖 ---
@@ -156,7 +170,10 @@ router.get("/votes/by-user", async (req: Request, res: Response) => {
 
     // 💖 이제 u._id 와 g._id 가 'unknown'이 아니에요!
     const userMap = new Map(
-      users.map((u: IUser & { _id: any }) => [u._id.toString(), { name: u.name, club: u.club }])
+      users.map((u: IUser & { _id: any }) => [
+        u._id.toString(),
+        { name: u.name, club: u.club },
+      ])
     );
     const gameMap = new Map(
       games.map((g) => [

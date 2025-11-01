@@ -40,6 +40,7 @@ function AdminPage() {
   // --- 폼 입력을 위한 State 확장 ---
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingUserVotes, setIsDownloadingUserVotes] = useState(false);
+  const [voterCount, setVoterCount] = useState(0); // 💖 실시간 투표자 수
 
   const [newUser, setNewUser] = useState({ name: "", role: "guest", club: "" });
   const [newGame, setNewGame] = useState({
@@ -64,6 +65,27 @@ function AdminPage() {
     fetchUsers();
     fetchGames();
   }, []);
+
+  useEffect(() => {
+    // 1. 사용자/게임 목록은 처음에 한 번만 가져옴
+    fetchUsers();
+    fetchGames();
+
+    // 2. 투표자 수를 가져오는 함수
+    const fetchVoterCount = async () => {
+      try {
+        const response = await api.get("/api/admin/votes/voter-count");
+        setVoterCount(response.data.voterCount);
+      } catch (error) {
+        console.error("실시간 투표자 수 로딩 실패:", error);
+      }
+    };
+
+    fetchVoterCount(); // 처음에 한 번 바로 실행
+    const intervalId = setInterval(fetchVoterCount, 5000); // 5초마다 반복
+
+    return () => clearInterval(intervalId); // 컴포넌트 언마운트 시 타이머 청소
+  }, []); // 마운트 시 한 번만 실행
 
   const handleCreateUser = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -261,11 +283,18 @@ function AdminPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-4xl font-bold mb-8">관리자 대시보드</h1>
-      <div className="flex gap-2">
-        {" "}
-        {/* 버튼 그룹 */}
-        {/* --- 투표 결과 다운로드 버튼 --- */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-4xl font-bold">관리자 대시보드</h1>
+        {/* --- 💖 실시간 투표자 수 표시 💖 --- */}
+        <div className="stats shadow bg-primary text-primary-content">
+          <div className="stat">
+            <div className="stat-title text-primary-content/80">현재 투표 참여자 수</div>
+            <div className="stat-value">{voterCount}명</div>
+            <div className="stat-desc">5초마다 갱신 중...</div>
+          </div>
+        </div>
+      </div>
+      
         <button
           className="btn btn-success"
           onClick={handleDownloadResults}
