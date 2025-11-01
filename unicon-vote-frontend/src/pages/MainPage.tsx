@@ -115,7 +115,7 @@ function MainPage() {
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
         setCountdownText(
-          `${days}일 ${hours.toString().padStart(2, "0")}:${minutes
+          `${hours.toString().padStart(2, "0")}:${minutes
             .toString()
             .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
         );
