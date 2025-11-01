@@ -283,18 +283,17 @@ function AdminPage() {
 
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-4xl font-bold">관리자 대시보드</h1>
-        {/* --- 💖 실시간 투표자 수 표시 💖 --- */}
+      <h1 className="text-4xl font-bold mb-8">관리자 대시보드</h1>
+      <div className="flex gap-2">
         <div className="stats shadow bg-primary text-primary-content">
           <div className="stat">
-            <div className="stat-title text-primary-content/80">현재 투표 참여자 수</div>
+            <div className="stat-title text-primary-content/80">
+              현재 투표 참여자 수
+            </div>
             <div className="stat-value">{voterCount}명</div>
             <div className="stat-desc">5초마다 갱신 중...</div>
           </div>
         </div>
-      </div>
-      
         <button
           className="btn btn-success"
           onClick={handleDownloadResults}
