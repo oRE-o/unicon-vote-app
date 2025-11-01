@@ -107,7 +107,6 @@ function MainPage() {
         return true; // 밀리초 타이머 실행 신호
       } else {
         // 1시간 이상 남았을 때
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
         const hours = Math.floor(
           (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
         );
