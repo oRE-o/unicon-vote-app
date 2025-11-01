@@ -41,6 +41,9 @@ function AdminPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingUserVotes, setIsDownloadingUserVotes] = useState(false);
   const [voterCount, setVoterCount] = useState(0); // 💖 실시간 투표자 수
+  const [userPasswordCount, setUserPasswordCount] = useState(0);
+  const [guestPasswordCount, setGuestPasswordCount] = useState(0);
+  const [totalPasswordCount, setTotalPasswordCount] = useState(0);
 
   const [newUser, setNewUser] = useState({ name: "", role: "guest", club: "" });
   const [newGame, setNewGame] = useState({
@@ -62,11 +65,6 @@ function AdminPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
-    fetchGames();
-  }, []);
-
-  useEffect(() => {
     // 1. 사용자/게임 목록은 처음에 한 번만 가져옴
     fetchUsers();
     fetchGames();
@@ -82,7 +80,12 @@ function AdminPage() {
     };
 
     fetchVoterCount(); // 처음에 한 번 바로 실행
-    const intervalId = setInterval(fetchVoterCount, 5000); // 5초마다 반복
+    fetchUserStats(); // 💖 추가
+
+    const intervalId = setInterval(() => {
+      fetchVoterCount();
+      fetchUserStats(); // 💖 추가
+    }, 5000); // 5000ms = 5초
 
     return () => clearInterval(intervalId); // 컴포넌트 언마운트 시 타이머 청소
   }, []); // 마운트 시 한 번만 실행
@@ -225,6 +228,17 @@ function AdminPage() {
       setIsDownloading(false);
     }
   };
+  const fetchUserStats = async () => {
+    try {
+      const response = await api.get("/api/admin/users/stats");
+      setUserPasswordCount(response.data.userWithPassword);
+      setGuestPasswordCount(response.data.guestWithPassword);
+      setTotalPasswordCount(response.data.totalWithPassword);
+    } catch (error) {
+      console.error("실시간 계정 통계 로딩 실패:", error);
+    }
+  };
+
   const handleDownloadUserVotes = async () => {
     setIsDownloadingUserVotes(true);
     try {

@@ -218,5 +218,33 @@ router.get("/votes/by-user", async (req: Request, res: Response) => {
     res.status(500).json({ message: "사용자별 투표 내역 집계 중 오류 발생" });
   }
 });
+router.get("/users/stats", async (req: Request, res: Response) => {
+  try {
+    // 1. password 필드가 존재하는 'user' 수
+    const userWithPassword = await User.countDocuments({
+      role: "user",
+      password: { $exists: true },
+    });
 
+    // 2. password 필드가 존재하는 'guest' 수
+    const guestWithPassword = await User.countDocuments({
+      role: "guest",
+      password: { $exists: true },
+    });
+
+    // 3. password 필드가 존재하는 전체 수
+    const totalWithPassword = await User.countDocuments({
+      password: { $exists: true },
+    });
+
+    res.status(200).json({
+      userWithPassword,
+      guestWithPassword,
+      totalWithPassword,
+    });
+  } catch (error) {
+    console.error("계정 통계 집계 실패:", error);
+    res.status(500).json({ message: "계정 통계 집계 중 오류 발생" });
+  }
+});
 export default router;
