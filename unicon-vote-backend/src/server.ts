@@ -170,6 +170,15 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+app.get("/api/health", (_req, res) => {
+  const isMongoConnected = mongoose.connection.readyState === 1;
+
+  res.status(isMongoConnected ? 200 : 503).json({
+    status: isMongoConnected ? "ok" : "degraded",
+    mongo: isMongoConnected ? "connected" : "disconnected",
+  });
+});
+
 const MONGO_URI: string = process.env.MONGO_URI || "";
 
 mongoose

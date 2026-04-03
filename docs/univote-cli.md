@@ -1,0 +1,125 @@
+# univote CLI
+
+`univote-cli`는 서버에서 `.env`를 직접 편집하지 않아도 화살표 기반 CLI로 quickstart를 설정하고 바로 올릴 수 있게 만든 도구입니다.
+
+## 이런 상황에 적합합니다
+
+- 서버를 처음 잡는 사람에게 텍스트 기반 마법사를 주고 싶을 때
+- `.env`를 손으로 적는 실수를 줄이고 싶을 때
+- quickstart compose를 바로 띄우고 연결 테스트까지 하고 싶을 때
+- 관리자 로그인 QR까지 바로 보고 싶을 때
+
+## 현재 하는 일
+
+- 저장소 루트를 자동 탐색
+- `.env` 생성 또는 갱신
+- 기존 `.env` 자동 백업
+- `docker compose -f docker-compose.quickstart.yml up -d --build`
+- Docker 서비스 자동 시작 여부 점검
+- 프론트/백엔드/관리자 계정 연결 확인
+- 관리자 로그인 URL과 QR 출력
+
+## 요구사항
+
+- Node.js 18 이상
+- npm
+- Docker
+- Linux 서버라면 `systemctl` 또는 `sudo` 사용 가능 환경이면 더 좋음
+
+## 설치
+
+프로젝트 루트에서 아래를 실행하세요.
+
+```bash
+cd univote-cli
+npm install
+npm link
+cd ..
+```
+
+이후부터는 프로젝트 루트에서 아래처럼 실행합니다.
+
+```bash
+univote
+```
+
+## 기본 사용 흐름
+
+### 1. 메뉴 열기
+
+```bash
+univote
+```
+
+화살표로 아래 메뉴를 고를 수 있습니다.
+
+- 빠른 설정 + 시작
+- 상태 확인
+- 로그 보기
+- 재시작
+- 중지
+- compose down
+- 관리자 QR 보기
+- 진단 실행
+
+### 2. 빠른 설정 + 시작
+
+`빠른 설정 + 시작`을 고르면 보통 아래를 묻습니다.
+
+- 사용자가 접속할 기본 주소
+- 추가 CORS 주소
+- 관리자 UUID/비밀번호를 추천값으로 쓸지
+- 샘플 데이터를 넣을지
+- S3형 썸네일 업로드를 설정할지
+
+설정이 끝나면:
+
+1. `.env` 작성
+2. quickstart compose 실행
+3. health 체크
+4. 관리자 QR 출력
+
+## 서브커맨드
+
+직접 명령으로도 쓸 수 있습니다.
+
+```bash
+univote configure
+univote start
+univote status
+univote logs
+univote qr
+univote restart
+univote stop
+univote down
+univote doctor
+```
+
+## 지속 실행과 리붓 대응
+
+quickstart compose는 이미 `restart: unless-stopped`를 사용합니다.
+
+즉, 보통은 아래 조건이면 충분합니다.
+
+1. Docker 데몬이 서버 부팅 시 자동 시작됨
+2. 컨테이너가 `up -d` 상태로 한 번 올라감
+
+`univote configure` 또는 `univote start` 과정에서는 Linux 서버일 경우 Docker 자동 시작도 같이 점검합니다.
+
+## 연결 확인 방식
+
+CLI는 기본적으로 아래를 검사합니다.
+
+- `docker info`
+- `docker compose ps`
+- `http://127.0.0.1`
+- `http://127.0.0.1:5001/api/health`
+- `http://127.0.0.1:5001/api/auth/status/<ADMIN_UUID>`
+
+즉, 적어도 서버 내부 기준으로 프론트/백/관리자 계정이 살아 있는지 확인합니다.
+
+## 주의
+
+- 이 CLI는 현재 `docker-compose.quickstart.yml` 전용입니다.
+- HTTPS, 기존 Docker Hub 이미지, certbot 운영 방식까지 마법사로 다루지는 않습니다.
+- 외부에서 접속이 안 될 경우에는 서버 방화벽, 클라우드 보안 그룹, 리버스 프록시 설정도 같이 확인해야 합니다.

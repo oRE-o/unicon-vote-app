@@ -101,6 +101,7 @@ flowchart LR
 - `POST /api/admin/users/replace-bracelet`
 - `DELETE /api/admin/users/:uuid`
 - `GET /api/admin/users/stats`
+- `GET /api/health`
 - `POST /api/admin/uploads/game-thumbnail`
 - `POST /api/admin/games`
 - `PATCH /api/admin/games/:id`

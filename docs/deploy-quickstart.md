@@ -32,6 +32,8 @@ git clone <REPOSITORY_URL>
 cd unicon-vote-app
 ```
 
+직접 `.env`를 편집하는 대신 화살표 기반 마법사를 쓰고 싶다면 [univote CLI](./univote-cli.md)를 먼저 보세요.
+
 ## 2. 환경변수 만들기
 
 ```bash

@@ -13,6 +13,8 @@
 
 ## 실행 문서
 
+- [univote CLI](./univote-cli.md)
+  화살표 기반 quickstart 마법사로 `.env` 작성, 실행, health 체크, 관리자 QR 확인까지 한 번에 진행합니다.
 - [로컬 시험장](./local-test-lab.md)
   샘플 데이터가 자동으로 들어가는 mock DB 기반 시험 환경입니다. 종료 시 흔적 없이 정리하는 방법까지 설명합니다.
 - [서버 빠른 실행](./deploy-quickstart.md)

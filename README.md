@@ -15,6 +15,7 @@ UNICON 행사에서 게임 투표를 진행하기 위한 웹 앱입니다.
 - [계정 접속 흐름](./docs/account-access-flow.md)
 - [관리자 대시보드 사용법](./docs/admin-operations.md)
 - [현장 이슈 대응 플레이북](./docs/on-site-playbook.md)
+- [univote CLI](./docs/univote-cli.md)
 - [로컬 시험장](./docs/local-test-lab.md)
 - [서버 빠른 실행](./docs/deploy-quickstart.md)
 - [로컬 개발](./docs/local-development.md)
@@ -45,6 +46,8 @@ http://SERVER_IP/login?uuid=<ADMIN_UUID>
 ```
 
 상세 설명은 [서버 빠른 실행 문서](./docs/deploy-quickstart.md)를 보세요.
+
+화살표 기반 마법사로 설정하고 바로 띄우고 싶다면 [univote CLI 문서](./docs/univote-cli.md)를 보세요.
 
 ## 로컬에서 안전하게 시험해보기
 
