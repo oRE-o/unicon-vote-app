@@ -2,6 +2,9 @@
 
 `univote-cli`는 UNICON Vote App 서버를 처음 잡는 사람도 화살표 기반 TUI로 빠르게 설정하고 실행할 수 있게 만든 quickstart 도구입니다.
 
+처음 서버를 띄울 때는 `univote`,  
+나중에 최신 변경사항을 반영할 때는 `univote update`를 주로 사용합니다.
+
 ## 할 수 있는 것
 
 - `.env` 마법사 생성
@@ -39,6 +42,12 @@ univote status
 univote logs
 univote qr
 ```
+
+가장 많이 쓰는 것은 아래 세 가지입니다.
+
+- `univote`: 설정 메뉴 열기
+- `univote update`: 최신 코드 반영 + 재빌드
+- `univote status`: 현재 상태 확인
 
 ## 주의
 

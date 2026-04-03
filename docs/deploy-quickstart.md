@@ -2,6 +2,16 @@
 
 처음 이 프로젝트를 받는 사람이 서버 한 대에서 가장 쉽게 실행하는 방법입니다.
 
+## 이 문서가 맞는 경우
+
+아래 중 하나면 이 문서를 보면 됩니다.
+
+- CLI 없이 직접 `.env`를 편집해서 배포하고 싶을 때
+- Docker와 Compose 명령을 어느 정도 알고 있을 때
+- quickstart가 실제로 어떤 파일로 동작하는지 알고 싶을 때
+
+처음이고 빠르게 끝내고 싶다면 보통 [univote CLI](./univote-cli.md)를 먼저 보는 편이 더 쉽습니다.
+
 이 방식은 다음을 전제로 합니다.
 
 - Docker Hub 이미지를 미리 준비하지 않아도 됨
@@ -15,6 +25,8 @@
 - Docker Compose Plugin
 - Git
 
+운영 서버는 보통 Linux를 권장합니다.
+
 Ubuntu 예시:
 
 ```bash
@@ -26,6 +38,8 @@ sudo usermod -aG docker $USER
 다시 로그인한 뒤 진행하세요.
 
 ## 1. 프로젝트 받기
+
+먼저 저장소를 서버에 내려받습니다.
 
 ```bash
 git clone https://github.com/oRE-o/unicon-vote-app
@@ -41,6 +55,8 @@ cd unicon-vote-app
 ```bash
 cp .env.example .env
 ```
+
+처음이라면 `.env.example`을 복사해서 시작한다고 이해하면 됩니다.
 
 최소 수정 권장값:
 
@@ -73,6 +89,8 @@ CORS_ORIGIN=http://YOUR_SERVER_IP,https://vote.example.com
 
 ## 3. 실행
 
+아래 명령으로 quickstart 컨테이너를 올립니다.
+
 ```bash
 docker compose -f docker-compose.quickstart.yml up -d --build
 ```
@@ -85,6 +103,12 @@ HTTPS까지 같이 쓰려면 quickstart만으로는 nginx 설정과 인증서 �
 docker compose -f docker-compose.quickstart.yml ps
 docker compose -f docker-compose.quickstart.yml logs -f backend frontend
 ```
+
+여기서 하고 싶은 확인은 아래 세 가지입니다.
+
+1. 컨테이너가 `Up` 상태인지
+2. backend, frontend 로그에 치명적인 에러가 없는지
+3. 브라우저에서 실제 주소가 열리는지
 
 ## 4-1. 나중에 최신 변경사항 반영하기
 
@@ -110,6 +134,8 @@ univote update
 
 - 서버 저장소에 직접 수정한 파일이 남아 있음
 - 현재 브랜치가 `main`이 아니거나 원격과 fast-forward 불가능한 상태임
+
+즉, 운영 서버에서는 `.env` 외 파일을 직접 수정하지 않는 편이 가장 편합니다.
 
 접속 주소:
 
@@ -174,6 +200,9 @@ SEED_SAMPLE_DATA=true
 - [`.env.example`](../.env.example)
 - [`unicon-vote-frontend/nginx.http.conf`](../unicon-vote-frontend/nginx.http.conf)
 - `unicon-vote-frontend/nginx.quickstart.generated.conf` (CLI가 HTTPS/HTTP 모드에 맞게 생성)
+
+이 파일들을 다 외울 필요는 없습니다.  
+처음에는 `.env`와 `docker-compose.quickstart.yml`만 이해해도 충분합니다.
 
 ## 기존 운영 방식과의 차이
 
