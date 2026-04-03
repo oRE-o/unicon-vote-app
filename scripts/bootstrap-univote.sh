@@ -47,8 +47,42 @@ prepare_privilege_mode() {
 install_base_packages() {
   section "기본 패키지 설치"
   ${SUDO_CMD:+$SUDO_CMD }apt-get update -y
-  ${SUDO_CMD:+$SUDO_CMD }apt-get install -y git curl ca-certificates docker.io docker-compose-plugin
-  success "git, curl, docker, docker compose 준비 완료"
+
+  local base_packages=()
+  if ! command -v git >/dev/null 2>&1; then
+    base_packages+=("git")
+  fi
+  if ! command -v curl >/dev/null 2>&1; then
+    base_packages+=("curl")
+  fi
+  base_packages+=("ca-certificates")
+
+  if [[ "${#base_packages[@]}" -gt 0 ]]; then
+    ${SUDO_CMD:+$SUDO_CMD }apt-get install -y "${base_packages[@]}"
+  fi
+
+  success "git, curl, 기본 인증서 준비 완료"
+}
+
+ensure_docker_packages() {
+  section "Docker 패키지 확인"
+
+  if command -v docker >/dev/null 2>&1; then
+    success "docker 명령이 이미 설치되어 있습니다."
+  else
+    info "docker 명령이 없어 Ubuntu 기본 패키지로 설치합니다."
+    ${SUDO_CMD:+$SUDO_CMD }apt-get install -y docker.io
+    success "docker 설치 완료"
+  fi
+
+  if docker compose version >/dev/null 2>&1; then
+    success "docker compose 플러그인이 이미 설치되어 있습니다."
+    return
+  fi
+
+  info "docker compose 플러그인을 설치합니다."
+  ${SUDO_CMD:+$SUDO_CMD }apt-get install -y docker-compose-plugin
+  success "docker compose 플러그인 설치 완료"
 }
 
 success() {
@@ -201,6 +235,7 @@ main() {
 
   info "Ubuntu/Debian 서버 기준 bootstrap을 시작합니다."
   install_base_packages
+  ensure_docker_packages
   ensure_node
   ensure_pnpm
   ensure_docker_service
