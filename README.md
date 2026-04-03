@@ -7,6 +7,12 @@ UNICON 행사에서 게임 투표를 진행하는 웹 앱입니다.
 
 ## Quickstart
 
+주의:
+
+- 아래 `curl ... | bash` 방식은 저장소가 public일 때 가장 잘 맞습니다.
+- 저장소가 private이면 GitHub raw URL이 익명 접근에서 `404`를 돌려줄 수 있습니다.
+- private 저장소라면 이 섹션 아래의 `private 저장소일 때` 절차를 먼저 사용하세요.
+
 아래 한 줄을 실행하기 전에 먼저 준비해야 하는 것이 있습니다.
 
 1. 공개 IP가 있는 Linux 서버를 하나 빌리기
@@ -45,6 +51,25 @@ univote update
 ```
 
 자세한 설명은 아래를 참고하세요.
+
+### private 저장소일 때
+
+저장소가 private이면 먼저 서버가 GitHub 저장소를 읽을 수 있어야 합니다.
+
+보통 아래 중 하나가 먼저 필요합니다.
+
+- 서버 SSH 키를 GitHub에 등록
+- 또는 GitHub 토큰을 이용해 clone 가능한 상태로 준비
+
+그 다음에는 아래처럼 저장소를 먼저 받아놓고, 로컬 bootstrap 스크립트를 실행하면 됩니다.
+
+```bash
+git clone git@github.com:oRE-o/unicon-vote-app.git ~/unicon-vote-app
+cd ~/unicon-vote-app
+REPO_DIR="$PWD" bash scripts/bootstrap-univote.sh
+```
+
+즉, private 저장소에서는 `raw.githubusercontent.com`으로 직접 bootstrap 스크립트를 받는 방식보다, 먼저 인증된 방식으로 `git clone` 한 뒤 로컬 스크립트를 실행하는 쪽이 안전합니다.
 
 ## Prerequisite (요구 사항)
 

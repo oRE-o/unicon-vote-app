@@ -13,6 +13,12 @@ Ubuntu/Debian 서버라면 아래 한 줄로 설치부터 `univote` 실행까지
 sudo apt-get update && sudo apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/oRE-o/unicon-vote-app/main/scripts/bootstrap-univote.sh | bash
 ```
 
+주의:
+
+- 이 방식은 저장소가 public일 때 가장 잘 맞습니다.
+- 저장소가 private이면 `raw.githubusercontent.com`에서 `404`가 날 수 있습니다.
+- private 저장소라면 먼저 인증된 방식으로 저장소를 clone 한 뒤 로컬 `scripts/bootstrap-univote.sh`를 실행하세요.
+
 이 bootstrap 스크립트는:
 
 - 필수 패키지 설치
