@@ -9,6 +9,8 @@ WRAPPER_PATH="${WRAPPER_DIR}/univote"
 NODE_SOURCE_SETUP_URL="https://deb.nodesource.com/setup_20.x"
 PNPM_VERSION="10.10.0"
 DOCKER_GROUP_ADDED="false"
+IS_ROOT="false"
+SUDO_CMD="sudo"
 
 section() {
   printf '\n== %s ==\n' "$1"
@@ -27,12 +29,13 @@ fail() {
   exit 1
 }
 
-require_non_root_user() {
+prepare_privilege_mode() {
   if [[ "${EUID}" -eq 0 ]]; then
-    fail "이 스크립트는 root가 아니라 일반 사용자로 실행해주세요. sudo 권한이 있는 계정으로 다시 실행하면 됩니다."
-  fi
-
-  if ! command -v sudo >/dev/null 2>&1; then
+    IS_ROOT="true"
+    SUDO_CMD=""
+    warn "현재 root로 실행 중입니다. 계속 진행할 수는 있지만, 운영은 보통 일반 사용자 계정으로 하는 편을 권장합니다."
+    warn "이 경우 저장소와 univote 명령도 root 기준 경로에 설치됩니다."
+  elif ! command -v sudo >/dev/null 2>&1; then
     fail "sudo 명령이 필요합니다."
   fi
 
@@ -43,8 +46,8 @@ require_non_root_user() {
 
 install_base_packages() {
   section "기본 패키지 설치"
-  sudo apt-get update -y
-  sudo apt-get install -y git curl ca-certificates docker.io docker-compose-plugin
+  ${SUDO_CMD:+$SUDO_CMD }apt-get update -y
+  ${SUDO_CMD:+$SUDO_CMD }apt-get install -y git curl ca-certificates docker.io docker-compose-plugin
   success "git, curl, docker, docker compose 준비 완료"
 }
 
@@ -66,8 +69,8 @@ ensure_node() {
 
   section "Node.js 설치"
   info "Node.js 20 LTS를 설치합니다."
-  curl -fsSL "${NODE_SOURCE_SETUP_URL}" | sudo -E bash -
-  sudo apt-get install -y nodejs
+  curl -fsSL "${NODE_SOURCE_SETUP_URL}" | ${SUDO_CMD:+$SUDO_CMD -E }bash -
+  ${SUDO_CMD:+$SUDO_CMD }apt-get install -y nodejs
   success "Node.js $(node --version) 설치 완료"
 }
 
@@ -85,14 +88,19 @@ ensure_pnpm() {
 
 ensure_docker_service() {
   section "Docker 서비스 준비"
-  sudo systemctl enable --now docker
+  ${SUDO_CMD:+$SUDO_CMD }systemctl enable --now docker
+
+  if [[ "${IS_ROOT}" == "true" ]]; then
+    success "root 실행이므로 docker 그룹 추가 없이 계속 진행합니다."
+    return
+  fi
 
   if id -nG "${USER}" | grep -qw docker; then
     success "현재 사용자는 이미 docker 그룹에 포함되어 있습니다."
     return
   fi
 
-  sudo usermod -aG docker "${USER}"
+  ${SUDO_CMD:+$SUDO_CMD }usermod -aG docker "${USER}"
   DOCKER_GROUP_ADDED="true"
   warn "현재 사용자를 docker 그룹에 추가했습니다. 이번 실행에서는 sg docker로 계속 진행합니다."
 }
@@ -185,8 +193,11 @@ launch_univote() {
 }
 
 main() {
-  require_non_root_user
-  sudo -v
+  prepare_privilege_mode
+
+  if [[ "${IS_ROOT}" != "true" ]]; then
+    sudo -v
+  fi
 
   info "Ubuntu/Debian 서버 기준 bootstrap을 시작합니다."
   install_base_packages
