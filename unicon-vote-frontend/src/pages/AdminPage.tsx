@@ -166,6 +166,8 @@ function AdminPage() {
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingUserVotes, setIsDownloadingUserVotes] = useState(false);
+  const [isDownloadingUserAccounts, setIsDownloadingUserAccounts] =
+    useState(false);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isReplacingBracelet, setIsReplacingBracelet] = useState(false);
   const [isSavingGame, setIsSavingGame] = useState(false);
@@ -723,6 +725,52 @@ function AdminPage() {
     }
   };
 
+  const handleDownloadUserAccounts = async () => {
+    setIsDownloadingUserAccounts(true);
+
+    try {
+      const accountSheetRows = sortedUsers.map((user) => ({
+        이름: user.name,
+        역할: user.role,
+        소속: user.club || "",
+        UUID: user.uuid,
+        "비밀번호 설정": user.hasPassword ? "예" : "아니오",
+        "투표 이력": user.hasVotes ? "있음" : "없음",
+        "여분 팔찌 후보": user.role === "guest" && !user.hasPassword && !user.hasVotes ? "예" : "아니오",
+        "로그인 링크": getLoginUrl(user.uuid),
+      }));
+
+      const namedRows = accountSheetRows.filter(
+        (row) => row.역할 === "user" || row.역할 === "admin"
+      );
+      const guestRows = accountSheetRows.filter((row) => row.역할 === "guest");
+
+      const workbook = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(accountSheetRows),
+        "전체 계정"
+      );
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(namedRows),
+        "기명 계정"
+      );
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(guestRows),
+        "무기명 계정"
+      );
+
+      XLSX.writeFile(workbook, "unicon_user_accounts.xlsx");
+    } catch (error) {
+      alert(getErrorMessage(error, "계정 리스트 다운로드에 실패했습니다."));
+    } finally {
+      setIsDownloadingUserAccounts(false);
+    }
+  };
+
   const selectedUserState = selectedUser ? getAccountState(selectedUser) : null;
   const spareBraceletCount = sortedUsers.filter(
     (user) => user.role === "guest" && !user.hasPassword && !user.hasVotes
@@ -739,10 +787,20 @@ function AdminPage() {
             <h1 className="text-4xl font-bold">관리자 대시보드</h1>
             <p className="mt-2 text-base-content/70">
               행사 현장에서 바로 대응할 수 있도록 계정 조회, 팔찌 교체, 비밀번호
-              초기화, 게임/썸네일 준비, 결과 집계를 한 화면에 모아두었습니다.
+              초기화, 게임/썸네일 준비, 계정 리스트 저장, 결과 집계를 한 화면에
+              모아두었습니다.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              className="btn btn-outline"
+              onClick={handleDownloadUserAccounts}
+              disabled={isDownloadingUserAccounts}
+            >
+              {isDownloadingUserAccounts
+                ? "생성 중..."
+                : "🪪 계정 리스트 (XLSX)"}
+            </button>
             <button
               className="btn btn-success"
               onClick={handleDownloadResults}
