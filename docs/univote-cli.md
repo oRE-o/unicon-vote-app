@@ -7,6 +7,21 @@
 처음 서버를 띄울 때는 보통 `univote`만 실행하면 되고,  
 나중에 업데이트할 때는 보통 `univote update`만 실행하면 됩니다.
 
+Ubuntu/Debian 서버라면 아래 한 줄로 설치부터 `univote` 실행까지 한 번에 진행할 수도 있습니다.
+
+```bash
+sudo apt-get update && sudo apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/oRE-o/unicon-vote-app/main/scripts/bootstrap-univote.sh | bash
+```
+
+이 bootstrap 스크립트는:
+
+- 필수 패키지 설치
+- 저장소 clone
+- `univote` 명령 연결
+- `univote` 마법사 실행
+
+까지 한 번에 처리합니다.
+
 ## 이런 상황에 적합합니다
 
 - 서버를 처음 잡는 사람에게 텍스트 기반 마법사를 주고 싶을 때
@@ -54,6 +69,14 @@ corepack prepare pnpm@10.10.0 --activate
 ## 설치
 
 처음 설치는 아래 한 번만 해두면 됩니다.
+
+가장 쉬운 방법:
+
+```bash
+sudo apt-get update && sudo apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/oRE-o/unicon-vote-app/main/scripts/bootstrap-univote.sh | bash
+```
+
+수동으로 설치하고 싶다면 아래 절차를 사용하세요.
 
 프로젝트 루트에서 아래를 실행하세요.
 

@@ -12,6 +12,12 @@
 
 처음이고 빠르게 끝내고 싶다면 보통 [univote CLI](./univote-cli.md)를 먼저 보는 편이 더 쉽습니다.
 
+정말 가장 쉬운 설치를 원하면 아래 bootstrap 한 줄을 먼저 시도해도 됩니다.
+
+```bash
+sudo apt-get update && sudo apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/oRE-o/unicon-vote-app/main/scripts/bootstrap-univote.sh | bash
+```
+
 중요:
 
 - 이 문서는 Docker Compose로 서버를 직접 띄우는 문서입니다.
