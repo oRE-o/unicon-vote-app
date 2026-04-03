@@ -37,8 +37,6 @@ function MainPage() {
     undefined
   );
   const [currentView, setCurrentView] = useState<"all" | "voted">("all");
-  // const [countdownText, setCountdownText] = useState("시간 계산 중...");
-  // const [showCountdown, setShowCountdown] = useState(true); // 💖 타이머 표시 여부!
 
   const shuffleArray = <T,>(array: T[]): T[] => {
     const newArray = [...array]; // 원본 배열을 수정하지 않기 위해 복사
@@ -77,65 +75,6 @@ function MainPage() {
     }
     fetchData();
   }, []);
-
-  // useEffect(() => {
-  //   // ⚠️ KST (GMT+9) 기준, 2025년 11월 1일 16:00 (년도는 실제 이벤트에 맞게 수정해주세요!)
-  //   const targetDate = new Date("2025-11-01T16:00:00+09:00").getTime();
-
-  //   const updateCountdown = () => {
-  //     const now = new Date().getTime();
-  //     const distance = targetDate - now;
-
-  //     if (distance <= 0) {
-  //       setCountdownText("투표가 마감되었습니다!");
-  //       setShowCountdown(false); // 💖 16시가 지나면 타이머를 숨겨요!
-  //       return false; // 타이머 중지 신호 (1초 간격으로)
-  //     }
-
-  //     // 1시간 미만일 때 (밀리초 표시)
-  //     if (distance < 3600000) {
-  //       // 1시간 = 3600000ms
-  //       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-  //       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-  //       const milliseconds = Math.floor((distance % 1000) / 10); // 10의 자리까지만
-
-  //       setCountdownText(
-  //         `${minutes.toString().padStart(2, "0")}:${seconds
-  //           .toString()
-  //           .padStart(2, "0")}:${milliseconds.toString().padStart(2, "0")}`
-  //       );
-  //       return true; // 밀리초 타이머 실행 신호
-  //     } else {
-  //       // 1시간 이상 남았을 때
-  //       const hours = Math.floor(
-  //         (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-  //       );
-  //       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-  //       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-  //       setCountdownText(
-  //         `${hours.toString().padStart(2, "0")}:${minutes
-  //           .toString()
-  //           .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-  //       );
-  //       return false; // 1초 타이머 실행 신호
-  //     }
-  //   };
-
-  //   // 타이머 설정 (동적 간격 조절)
-  //   let intervalId: NodeJS.Timeout;
-
-  //   const runTimer = () => {
-  //     const isMillis = updateCountdown();
-
-  //     clearInterval(intervalId);
-  //     intervalId = setInterval(runTimer, isMillis ? 100 : 1000);
-  //   };
-
-  //   runTimer(); // 최초 실행
-
-  //   return () => clearInterval(intervalId);
-  // }, []);
 
   const handleVote = async (
     criterion: Vote["criterion"],
@@ -215,20 +154,6 @@ function MainPage() {
           다시 투표하기 버튼을 눌러 언제든지 투표를 수정할 수 있어요.
         </p>
       </header>
-      {/* {showCountdown && (
-        <div className="mt-6 p-4 bg-base-100 rounded-lg shadow-inner max-w-md mx-auto">
-          <p className="font-semibold text-lg text-primary">
-            투표 가능 시간이{" "}
-            <span className="font-bold text-2xl tracking-widest">
-              {countdownText}
-            </span>{" "}
-            남았어요!
-          </p>
-          <p className="text-sm text-base-content/70 mt-1">
-            남은 메달을 전부 사용해주세요. 시간이 지나면 투표가 마감됩니다!
-          </p>
-        </div>
-      )} */}
 
       <div className="hidden md:block">
         <section className="mb-12">

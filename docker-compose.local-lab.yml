@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ./unicon-vote-backend
+    container_name: unicon-local-lab-backend
+    environment:
+      PORT: 5001
+      MONGO_URI: mongodb://lab_user:lab_password@mongo:27017/unicon_vote_lab?authSource=admin
+      JWT_SECRET: local-lab-secret-key
+      ADMIN_UUID: 00000000-0000-0000-0000-000000000000
+      ADMIN_PASSWORD: local-admin-1234
+      CORS_ORIGIN: http://localhost:18080,http://127.0.0.1:18080
+      SEED_SAMPLE_DATA: "true"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "15001:5001"
+
+  frontend:
+    build:
+      context: ./unicon-vote-frontend
+    container_name: unicon-local-lab-frontend
+    depends_on:
+      - backend
+    ports:
+      - "18080:80"
+    volumes:
+      - ./unicon-vote-frontend/nginx.http.conf:/etc/nginx/conf.d/default.conf:ro
+
+  mongo:
+    image: mongo:7
+    container_name: unicon-local-lab-mongo
+    command: mongod --bind_ip_all
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: lab_user
+      MONGO_INITDB_ROOT_PASSWORD: lab_password
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

@@ -3,9 +3,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SplitText from "../components/reactbits/SplitText"; // SplitText 컴포넌트 경로 확인!
 import ErrorMessage from "../components/ErrorMessage"; // 1. ErrorMessage 컴포넌트 import
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"; // 환경변수에서 API_BASE_URL 읽기
+import { API_BASE_URL } from "../api";
 
 function SignUpPage() {
   const [userId, setUserId] = useState("");
