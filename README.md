@@ -3,6 +3,8 @@
 UNICON 행사에서 게임 투표를 진행하는 웹 앱입니다.  
 처음 이 저장소에 들어온 사람이 가장 빨리 서버를 올리고, 관리자 페이지에 접속하고, 행사 준비를 시작할 수 있도록 문서를 다시 정리했습니다.
 
+저장소 주소: [https://github.com/oRE-o/unicon-vote-app](https://github.com/oRE-o/unicon-vote-app)
+
 ## 1. 가장 빠른 유니콘 투표시스템 구동
 
 ### 1-1. 준비할 것
@@ -38,17 +40,24 @@ UNICON 행사에서 게임 투표를 진행하는 웹 앱입니다.
 보안상 권장:
 
 - `5001`, `27017` 포트는 외부 인터넷에 열지 않는 것을 권장합니다.
-- 보통 외부 공개는 `80`만으로 충분합니다.
+- HTTP만 쓸 때는 외부 공개를 `80`만 해도 됩니다.
+- HTTPS를 쓸 때는 외부 공개를 `80`, `443` 둘 다 열어야 합니다.
 
-quickstart는 HTTP 기준입니다.  
-즉, 처음에는 도메인 없이 공인 IP만으로도 바로 띄울 수 있습니다.
+HTTPS까지 쓰려면:
+
+- 도메인 1개가 서버 공인 IP를 가리켜야 함
+- 포트 `80`, `443` 둘 다 열려 있어야 함
+- `univote`에서 HTTPS 모드를 선택하면 Let's Encrypt 인증서를 자동으로 시도함
+
+quickstart는 HTTP와 HTTPS 둘 다 가능합니다.  
+실제 행사 운영이라면 도메인을 준비해서 HTTPS로 띄우는 것을 권장합니다.
 
 ### 1-2. 구동하기
 
 서버에 접속한 뒤 아래를 순서대로 실행하세요.
 
 ```bash
-git clone <REPOSITORY_URL>
+git clone https://github.com/oRE-o/unicon-vote-app
 cd unicon-vote-app
 cd univote-cli
 npm install
@@ -65,19 +74,22 @@ univote
 - 기존 `.env` 백업
 - `docker compose -f docker-compose.quickstart.yml up -d --build`
 - Docker 자동 시작 여부 점검
+- HTTPS 선택 시 Let's Encrypt 인증서 발급 시도
 - 프론트/백엔드/관리자 계정 연결 테스트
 - 관리자 로그인 URL과 QR 출력
 
 설정 중에는 보통 아래만 입력하면 됩니다.
 
 - 사람들이 접속할 주소
+- HTTPS를 쓸지 여부
+- 도메인과 인증서용 이메일
 - 관리자 비밀번호
 - 샘플 데이터를 넣을지 여부
 - 게임 썸네일 업로드용 S3 정보를 넣을지 여부
 
 ### 자동 구동 완료 후 확인하는 법
 
-1. 브라우저에서 `http://SERVER_IP` 접속
+1. 브라우저에서 CLI가 안내한 주소 접속
 2. CLI가 보여준 관리자 로그인 URL 접속
 3. 관리자 비밀번호 입력
 4. `/admin` 화면이 열리는지 확인
@@ -88,6 +100,28 @@ univote
 - 메인 화면이 열림
 - 관리자 로그인 가능
 - `univote status`가 health 체크를 통과함
+
+### 나중에 앱 업데이트를 반영하는 법
+
+GitHub에 새 변경사항이 올라왔을 때는 운영 서버에서 아래만 실행하면 됩니다.
+
+```bash
+cd ~/unicon-vote-app
+univote update
+```
+
+이 명령은 아래를 순서대로 처리합니다.
+
+- `origin/main` 최신 변경사항 확인
+- fast-forward 방식으로만 안전하게 pull
+- `univote-cli` 의존성 다시 맞추기
+- Docker 컨테이너 재빌드 및 재시작
+- health 체크와 관리자 접속 정보 다시 출력
+
+주의:
+
+- 서버 저장소에 직접 수정한 파일이 남아 있으면 보호를 위해 업데이트를 멈춥니다.
+- 그래서 운영 서버에서는 보통 `.env` 말고는 저장소 파일을 직접 수정하지 않는 것을 권장합니다.
 
 뭔가 안 될 경우:
 

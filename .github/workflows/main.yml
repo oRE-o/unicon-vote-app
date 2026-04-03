@@ -1,94 +1,17 @@
-name: CI/CD with Docker Compose
+name: Manual Ops Note
 
 on:
-  push:
-    branches: ["main"]
-
-env:
-  DOCKER_IMAGE_BACKEND: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-backend
-  DOCKER_IMAGE_FRONTEND: ${{ secrets.DOCKERHUB_USERNAME }}/unicon-vote-frontend
+  workflow_dispatch:
 
 jobs:
-  # --- 백엔드 빌드 및 푸시 잡 (변경 없음) ---
-  build-backend:
+  deployment-note:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Docker Hub Login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN  }}
-
-      - name: Build and push backend
-        uses: docker/build-push-action@v4
-        with:
-          context: ./unicon-vote-backend
-          push: true
-          tags: ${{ env.DOCKER_IMAGE_BACKEND }}:latest
-
-  # --- 프론트엔드 빌드 및 푸시 잡 (API_BASE_URL 전달하도록 수정) ---
-  build-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Docker Hub Login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push frontend
-        uses: docker/build-push-action@v4
-        with:
-          context: ./unicon-vote-frontend
-          push: true
-          tags: ${{ env.DOCKER_IMAGE_FRONTEND }}:latest
-          build-args: |
-            VITE_API_BASE_URL=https://${{ secrets.SERVER_DOMAIN }}/api
-            # 💡 중요: 서버 IP를 사용하세요. EC2에 도메인을 연결했다면 도메인으로.
-
-  # --- 서버에 배포하는 잡 (CD) - Docker Compose 사용하도록 변경 ---
-  deploy:
-    needs: [build-backend, build-frontend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            # 1. git clone 받아둔 프로젝트 폴더로 이동합니다.
-            cd unicon-vote-app
-
-            # 2. main 브랜치의 최신 변경사항(docker-compose.yml 등)을 받아옵니다.
-            git pull origin main
-
-            echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" > .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-            echo "ADMIN_UUID=${{ secrets.ADMIN_UUID }}" >> .env
-            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
-            echo "MONGO_ROOT_USER=${{ secrets.MONGO_ROOT_USER }}" >> .env
-            echo "MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}" >> .env
-            echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
-            echo "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" >> .env 
-            echo "SERVER_HOST=${{ secrets.SERVER_HOST }}" >> .env
-            echo "SERVER_DOMAIN=${{ secrets.SERVER_DOMAIN }}" >> .env
-
-            # 3. Docker Hub에 로그인합니다.
-            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
-
-            # 4. docker-compose로 최신 이미지를 pull하고 서비스를 시작/재시작합니다.
-            docker-compose pull
-            docker-compose up -d
-
-            # 5. 불필요하게 쌓인 옛날 Docker 이미지들을 정리합니다 (선택사항이지만 추천).
-            docker image prune -f
-
-            echo "Deployment completed successfully!"
+      - name: Explain current deployment flow
+        run: |
+          echo "Push-based CI/CD is disabled for this repository."
+          echo "Run updates directly on the target server instead."
+          echo ""
+          echo "Recommended server update flow:"
+          echo "  cd ~/unicon-vote-app"
+          echo "  univote update"

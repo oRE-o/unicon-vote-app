@@ -3,6 +3,7 @@
 import { confirm, input, password, select } from "@inquirer/prompts";
 import { randomBytes, randomUUID } from "crypto";
 import { existsSync, readFileSync, writeFileSync } from "fs";
+import { isIP } from "net";
 import os from "os";
 import path from "path";
 import process from "process";
@@ -11,6 +12,8 @@ import dotenv from "dotenv";
 import qrcode from "qrcode-terminal";
 
 const QUICKSTART_COMPOSE_FILE = "docker-compose.quickstart.yml";
+const GENERATED_NGINX_CONFIG_RELATIVE =
+  "./unicon-vote-frontend/nginx.quickstart.generated.conf";
 const REQUIRED_MARKERS = [
   QUICKSTART_COMPOSE_FILE,
   path.join("unicon-vote-backend", "package.json"),
@@ -30,6 +33,7 @@ const HELP_TEXT = `Usage: univote [command]
 
 Commands
   configure   Interactive quickstart wizard
+  update      Pull the latest repository changes and rebuild services
   start       docker compose up -d --build
   stop        Stop containers without removing data
   down        docker compose down (keeps Mongo volume)
@@ -137,6 +141,9 @@ function writeEnvFile(repoRoot, envValues) {
     `MONGO_ROOT_USER=${envValues.MONGO_ROOT_USER}`,
     `MONGO_ROOT_PASSWORD=${envValues.MONGO_ROOT_PASSWORD}`,
     `CORS_ORIGIN=${envValues.CORS_ORIGIN}`,
+    `ENABLE_HTTPS=${envValues.ENABLE_HTTPS}`,
+    `LETSENCRYPT_EMAIL=${envValues.LETSENCRYPT_EMAIL || ""}`,
+    `FRONTEND_NGINX_CONFIG=${envValues.FRONTEND_NGINX_CONFIG}`,
     `SEED_SAMPLE_DATA=${envValues.SEED_SAMPLE_DATA}`,
     "",
     "# Optional: existing production compose / CI/CD",
@@ -172,6 +179,42 @@ function generateSecret(length = 32) {
 
 function sanitizePublicUrl(value) {
   return value.trim().replace(/\/+$/, "");
+}
+
+function validateEmail(value) {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return "이메일을 입력해주세요.";
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue)) {
+    return "유효한 이메일 주소를 입력해주세요.";
+  }
+
+  return true;
+}
+
+function validateDomain(value) {
+  const trimmedValue = value.trim().toLowerCase();
+
+  if (!trimmedValue) {
+    return "도메인을 입력해주세요.";
+  }
+
+  if (/^https?:\/\//.test(trimmedValue)) {
+    return "도메인만 입력해주세요. 예: vote.example.com";
+  }
+
+  if (isIP(trimmedValue)) {
+    return "HTTPS quickstart는 IP가 아니라 도메인이 필요합니다.";
+  }
+
+  if (!/^[a-z0-9.-]+$/.test(trimmedValue) || !trimmedValue.includes(".")) {
+    return "유효한 도메인 형식이 아닙니다.";
+  }
+
+  return true;
 }
 
 function parseOrigins(value) {
@@ -244,9 +287,116 @@ function getAdditionalOrigins(existingEnv) {
   return currentOrigins.slice(1).join(", ");
 }
 
+function getHostFromOrigin(origin) {
+  try {
+    return new URL(origin).hostname;
+  } catch (_error) {
+    return "";
+  }
+}
+
+function getPrimaryOrigin(envValues) {
+  const configuredOrigin = parseOrigins(envValues.CORS_ORIGIN || "")[0];
+
+  if (configuredOrigin) {
+    return configuredOrigin;
+  }
+
+  if (envValues.SERVER_DOMAIN) {
+    return `${isHttpsEnabled(envValues) ? "https" : "http"}://${envValues.SERVER_DOMAIN}`;
+  }
+
+  return "http://localhost";
+}
+
 function getDisplayLoginUrl(envValues) {
-  const baseUrl = parseOrigins(envValues.CORS_ORIGIN || "")[0] || "http://localhost";
+  const baseUrl = getPrimaryOrigin(envValues);
   return `${baseUrl}/login?uuid=${envValues.ADMIN_UUID}`;
+}
+
+function isHttpsEnabled(envValues) {
+  return envValues?.ENABLE_HTTPS === "true";
+}
+
+function getGeneratedNginxConfigPath(repoRoot) {
+  return path.join(repoRoot, "unicon-vote-frontend", "nginx.quickstart.generated.conf");
+}
+
+function buildQuickstartHttpConfig(serverName) {
+  return `server {
+    listen 80;
+    server_name ${serverName};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location /api/ {
+        proxy_pass http://backend:5001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+}
+`;
+}
+
+function buildQuickstartHttpsConfig(serverDomain) {
+  return `server {
+    listen 80;
+    server_name ${serverDomain};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name ${serverDomain};
+
+    ssl_certificate /etc/letsencrypt/live/${serverDomain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${serverDomain}/privkey.pem;
+
+    location /api/ {
+        proxy_pass http://backend:5001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+}
+`;
+}
+
+function renderQuickstartNginxConfig(repoRoot, envValues, mode = "http") {
+  const primaryOrigin = getPrimaryOrigin(envValues);
+  const serverName = envValues.SERVER_DOMAIN?.trim() || getHostFromOrigin(primaryOrigin) || "_";
+  const configContent =
+    mode === "https"
+      ? buildQuickstartHttpsConfig(serverName)
+      : buildQuickstartHttpConfig(serverName);
+
+  writeFileSync(getGeneratedNginxConfigPath(repoRoot), configContent, "utf8");
 }
 
 function maskValue(value, visible = 4) {
@@ -261,8 +411,13 @@ function maskValue(value, visible = 4) {
   return `${value.slice(0, visible)}...${value.slice(-visible)}`;
 }
 
-function getDockerComposeArgs(extraArgs = []) {
-  return ["compose", "-f", QUICKSTART_COMPOSE_FILE, ...extraArgs];
+function getDockerComposeArgs(extraArgs = [], options = {}) {
+  const profileArgs = (options.profiles || []).flatMap((profile) => [
+    "--profile",
+    profile,
+  ]);
+
+  return ["compose", ...profileArgs, "-f", QUICKSTART_COMPOSE_FILE, ...extraArgs];
 }
 
 function runCommand(command, args, options = {}) {
@@ -316,6 +471,150 @@ async function printComposeStatus(repoRoot) {
     cwd: repoRoot,
     stdio: "inherit",
   });
+}
+
+async function checkGitBasics() {
+  section("Git 확인");
+  await runCommand("git", ["--version"]);
+  success("git 명령을 찾았습니다.");
+}
+
+async function ensureGitOnMainBranch(repoRoot) {
+  const { stdout } = await runCommand("git", ["branch", "--show-current"], {
+    cwd: repoRoot,
+  });
+  const branchName = stdout.trim();
+
+  if (branchName !== "main") {
+    throw new Error(
+      `자동 업데이트는 main 브랜치에서만 지원합니다. 현재 브랜치: ${branchName || "detached HEAD"}`
+    );
+  }
+}
+
+async function ensureGitWorkingTreeClean(repoRoot) {
+  const { stdout } = await runCommand("git", ["status", "--porcelain"], {
+    cwd: repoRoot,
+  });
+
+  if (stdout.trim()) {
+    throw new Error(
+      "로컬 변경사항이 있어서 자동 업데이트를 중단했습니다. 먼저 커밋하거나 백업한 뒤 다시 시도해주세요."
+    );
+  }
+}
+
+async function pullLatestChanges(repoRoot) {
+  section("업데이트 확인");
+
+  await runCommand("git", ["fetch", "origin", "main"], {
+    cwd: repoRoot,
+    stdio: "inherit",
+  });
+
+  const { stdout: countStdout } = await runCommand(
+    "git",
+    ["rev-list", "--count", "HEAD..origin/main"],
+    {
+      cwd: repoRoot,
+    }
+  );
+  const pendingCommitCount = Number.parseInt(countStdout.trim() || "0", 10);
+
+  if (!Number.isFinite(pendingCommitCount) || pendingCommitCount <= 0) {
+    success("이미 최신 커밋 상태입니다.");
+    return false;
+  }
+
+  info(`가져올 새 커밋 ${pendingCommitCount}개를 확인했습니다.`);
+
+  await runCommand("git", ["pull", "--ff-only", "origin", "main"], {
+    cwd: repoRoot,
+    stdio: "inherit",
+  });
+
+  success("최신 코드를 가져왔습니다.");
+  return true;
+}
+
+async function syncUnivoteCliDependencies(repoRoot) {
+  section("CLI 의존성 확인");
+  await runCommand("npm", ["install", "--no-fund", "--no-audit"], {
+    cwd: path.join(repoRoot, "univote-cli"),
+    stdio: "inherit",
+  });
+  success("univote-cli 의존성을 동기화했습니다.");
+}
+
+async function hasHttpsCertificate(repoRoot, envValues) {
+  if (!isHttpsEnabled(envValues) || !envValues.SERVER_DOMAIN?.trim()) {
+    return false;
+  }
+
+  try {
+    await runCommand(
+      "docker",
+      getDockerComposeArgs([
+        "run",
+        "--rm",
+        "--entrypoint",
+        "sh",
+        "certbot",
+        "-c",
+        `test -f /etc/letsencrypt/live/${envValues.SERVER_DOMAIN}/fullchain.pem && test -f /etc/letsencrypt/live/${envValues.SERVER_DOMAIN}/privkey.pem`,
+      ], {
+        profiles: ["tls"],
+      }),
+      {
+        cwd: repoRoot,
+      }
+    );
+
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function ensureHttpsCertificate(repoRoot, envValues) {
+  if (!isHttpsEnabled(envValues)) {
+    return;
+  }
+
+  if (!envValues.SERVER_DOMAIN?.trim() || !envValues.LETSENCRYPT_EMAIL?.trim()) {
+    throw new Error("HTTPS를 쓰려면 SERVER_DOMAIN 과 LETSENCRYPT_EMAIL 이 모두 필요합니다.");
+  }
+
+  section("HTTPS 인증서");
+  info("도메인이 현재 서버 IP를 가리키고, 80/443 포트가 열려 있어야 합니다.");
+
+  await runCommand(
+    "docker",
+    getDockerComposeArgs([
+      "run",
+      "--rm",
+      "certbot",
+      "certonly",
+      "--webroot",
+      "-w",
+      "/var/www/certbot",
+      "-d",
+      envValues.SERVER_DOMAIN,
+      "--email",
+      envValues.LETSENCRYPT_EMAIL,
+      "--agree-tos",
+      "--no-eff-email",
+      "--keep-until-expiring",
+    ], {
+      profiles: ["tls"],
+    }),
+    {
+      cwd: repoRoot,
+      stdio: "inherit",
+    }
+  );
+
+  success("Let's Encrypt 인증서를 확인하거나 발급했습니다.");
 }
 
 async function ensureEnvExists(repoRoot) {
@@ -416,7 +715,6 @@ async function verifyQuickstart(repoRoot, envValues) {
   section("실행 확인");
   await printComposeStatus(repoRoot);
 
-  const localFrontendUrl = "http://127.0.0.1";
   const localHealthUrl = "http://127.0.0.1:5001/api/health";
   const localAdminStatusUrl = `http://127.0.0.1:5001/api/auth/status/${envValues.ADMIN_UUID}`;
 
@@ -424,23 +722,60 @@ async function verifyQuickstart(repoRoot, envValues) {
     waitForHttpOk(localHealthUrl),
     waitForHttpOk(localAdminStatusUrl),
   ]);
-  await waitForHttpOk(localFrontendUrl);
 
   const healthPayload = await healthResponse.json();
   const adminPayload = await adminStatusResponse.json();
 
-  success(`프론트엔드가 ${localFrontendUrl} 에서 응답합니다.`);
+  if (isHttpsEnabled(envValues) && envValues.SERVER_DOMAIN?.trim()) {
+    const httpsUrl = `https://${envValues.SERVER_DOMAIN}`;
+    await waitForHttpOk(httpsUrl, 120000);
+    success(`프론트엔드가 ${httpsUrl} 에서 HTTPS로 응답합니다.`);
+  } else {
+    const httpUrl = getPrimaryOrigin(envValues).startsWith("http://")
+      ? getPrimaryOrigin(envValues)
+      : "http://127.0.0.1";
+    await waitForHttpOk(httpUrl);
+    success(`프론트엔드가 ${httpUrl} 에서 응답합니다.`);
+  }
+
   success(`백엔드 health 체크 성공: ${healthPayload.status} / Mongo ${healthPayload.mongo}`);
   success(`관리자 계정 확인 성공: ${adminPayload.name} (${adminPayload.uuid})`);
 }
 
-async function startQuickstart(repoRoot, envValues) {
+async function startQuickstart(repoRoot, envValues, options = {}) {
+  const { build = true } = options;
+  const httpsRequested = isHttpsEnabled(envValues);
+  const hadCertificate = httpsRequested
+    ? await hasHttpsCertificate(repoRoot, envValues)
+    : false;
+
+  renderQuickstartNginxConfig(repoRoot, envValues, hadCertificate ? "https" : "http");
+
   section("서비스 시작");
-  await runCommand("docker", getDockerComposeArgs(["up", "-d", "--build"]), {
-    cwd: repoRoot,
-    stdio: "inherit",
-  });
+  await runCommand(
+    "docker",
+    getDockerComposeArgs(
+      build
+        ? ["up", "-d", "--build", "backend", "frontend", "mongo"]
+        : ["up", "-d", "backend", "frontend", "mongo"]
+    ),
+    {
+      cwd: repoRoot,
+      stdio: "inherit",
+    }
+  );
   success("quickstart 컨테이너를 시작했습니다.");
+
+  if (httpsRequested) {
+    await ensureHttpsCertificate(repoRoot, envValues);
+    renderQuickstartNginxConfig(repoRoot, envValues, "https");
+    await runCommand("docker", getDockerComposeArgs(["restart", "frontend"]), {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
+    success("frontend를 HTTPS 설정으로 다시 불러왔습니다.");
+  }
+
   await verifyQuickstart(repoRoot, envValues);
 }
 
@@ -464,12 +799,7 @@ async function downQuickstart(repoRoot) {
 
 async function restartQuickstart(repoRoot, envValues) {
   section("서비스 재시작");
-  await runCommand("docker", getDockerComposeArgs(["restart"]), {
-    cwd: repoRoot,
-    stdio: "inherit",
-  });
-  success("컨테이너를 재시작했습니다.");
-  await verifyQuickstart(repoRoot, envValues);
+  await startQuickstart(repoRoot, envValues, { build: false });
 }
 
 async function showLogs(repoRoot) {
@@ -497,6 +827,28 @@ async function printQr(repoRoot) {
   printAdminAccess(envValues);
 }
 
+async function updateQuickstart(repoRoot) {
+  await ensureEnvExists(repoRoot);
+  await checkGitBasics();
+  await ensureGitOnMainBranch(repoRoot);
+  await ensureGitWorkingTreeClean(repoRoot);
+
+  const hasUpdates = await pullLatestChanges(repoRoot);
+  if (!hasUpdates) {
+    const envValues = loadExistingEnv(repoRoot);
+    await verifyQuickstart(repoRoot, envValues);
+    printAdminAccess(envValues);
+    return;
+  }
+
+  await syncUnivoteCliDependencies(repoRoot);
+
+  const envValues = loadExistingEnv(repoRoot);
+  await checkDockerBasics();
+  await startQuickstart(repoRoot, envValues, { build: true });
+  printAdminAccess(envValues);
+}
+
 async function runDoctor(repoRoot) {
   await checkDockerBasics();
   await checkDockerAutostart();
@@ -520,6 +872,13 @@ async function collectConfig(repoRoot) {
   const recommendedValues = {
     publicUrl: getPreferredPublicUrl(existingEnv),
     additionalOrigins: getAdditionalOrigins(existingEnv),
+    enableHttps:
+      existingEnv.ENABLE_HTTPS === "true" ||
+      parseOrigins(existingEnv.CORS_ORIGIN || "")[0]?.startsWith("https://"),
+    serverDomain:
+      existingEnv.SERVER_DOMAIN ||
+      getHostFromOrigin(parseOrigins(existingEnv.CORS_ORIGIN || "")[0] || ""),
+    letsencryptEmail: existingEnv.LETSENCRYPT_EMAIL || "",
     jwtSecret: existingEnv.JWT_SECRET || generateSecret(48),
     adminUuid: existingEnv.ADMIN_UUID || randomUUID(),
     adminPassword: existingEnv.ADMIN_PASSWORD || generateSecret(16),
@@ -532,13 +891,57 @@ async function collectConfig(repoRoot) {
   info(`작업 디렉토리: ${repoRoot}`);
   info("이 마법사는 .env를 만들고 quickstart compose를 바로 띄우는 흐름입니다.");
 
-  const publicUrl = sanitizePublicUrl(
-    await input({
-      message: "사용자가 접속할 기본 주소를 입력하세요.",
-      default: recommendedValues.publicUrl,
-      validate: (value) => validateUrlList(value),
-    })
-  );
+  const deploymentMode = await select({
+    message: "접속 방식을 고르세요.",
+    default: recommendedValues.enableHttps ? "https" : "http",
+    choices: [
+      {
+        name: "HTTPS (추천, 실제 행사 운영용 / 도메인 필요)",
+        value: "https",
+      },
+      {
+        name: "HTTP (테스트용 또는 도메인 준비 전)",
+        value: "http",
+      },
+    ],
+  });
+
+  let publicUrl = recommendedValues.publicUrl;
+  let serverDomain = existingEnv.SERVER_DOMAIN || recommendedValues.serverDomain;
+  let letsencryptEmail = existingEnv.LETSENCRYPT_EMAIL || recommendedValues.letsencryptEmail;
+
+  if (deploymentMode === "https") {
+    info("HTTPS를 쓰려면 도메인이 이 서버 IP를 가리키고 80/443 포트가 열려 있어야 합니다.");
+    serverDomain = (
+      await input({
+        message: "실제 접속 도메인",
+        default: serverDomain,
+        validate: validateDomain,
+      })
+    )
+      .trim()
+      .toLowerCase();
+
+    letsencryptEmail = (
+      await input({
+        message: "Let's Encrypt 알림 이메일",
+        default: letsencryptEmail,
+        validate: validateEmail,
+      })
+    ).trim();
+
+    publicUrl = `https://${serverDomain}`;
+  } else {
+    publicUrl = sanitizePublicUrl(
+      await input({
+        message: "사용자가 접속할 기본 주소를 입력하세요.",
+        default: recommendedValues.publicUrl.startsWith("https://")
+          ? `http://${recommendedValues.serverDomain || "localhost"}`
+          : recommendedValues.publicUrl,
+        validate: (value) => validateUrlList(value),
+      })
+    );
+  }
 
   const additionalOrigins = await input({
     message: "추가로 허용할 CORS_ORIGIN 이 있으면 쉼표로 입력하세요. 없으면 Enter.",
@@ -657,9 +1060,12 @@ async function collectConfig(repoRoot) {
     MONGO_ROOT_USER: mongoUser,
     MONGO_ROOT_PASSWORD: mongoPassword,
     CORS_ORIGIN: [publicUrl, ...parseOrigins(additionalOrigins)].join(","),
+    ENABLE_HTTPS: deploymentMode === "https" ? "true" : "false",
+    LETSENCRYPT_EMAIL: deploymentMode === "https" ? letsencryptEmail : "",
+    FRONTEND_NGINX_CONFIG: GENERATED_NGINX_CONFIG_RELATIVE,
     SEED_SAMPLE_DATA: seedSampleData ? "true" : "false",
     DOCKERHUB_USERNAME: existingEnv.DOCKERHUB_USERNAME || "",
-    SERVER_DOMAIN: existingEnv.SERVER_DOMAIN || "",
+    SERVER_DOMAIN: deploymentMode === "https" ? serverDomain : existingEnv.SERVER_DOMAIN || "",
     SERVER_HOST: existingEnv.SERVER_HOST || "",
     S3_REGION: s3Region,
     S3_BUCKET: s3Bucket,
@@ -674,6 +1080,11 @@ async function collectConfig(repoRoot) {
   info(`기본 접속 주소: ${publicUrl}`);
   info(`관리자 로그인 URL: ${getDisplayLoginUrl(envValues)}`);
   info(`관리자 비밀번호: ${envValues.ADMIN_PASSWORD}`);
+  info(
+    envValues.ENABLE_HTTPS === "true"
+      ? `HTTPS: 사용 (${envValues.SERVER_DOMAIN})`
+      : "HTTPS: 사용 안 함"
+  );
   info(`JWT 시크릿: ${maskValue(envValues.JWT_SECRET)}`);
   info(`Mongo 루트 사용자: ${envValues.MONGO_ROOT_USER}`);
   info(`Mongo 루트 비밀번호: ${maskValue(envValues.MONGO_ROOT_PASSWORD)}`);
@@ -718,6 +1129,7 @@ async function runInteractiveMenu(repoRoot) {
     message: "무엇을 할까요?",
     choices: [
       { name: "빠른 설정 + 시작", value: "configure" },
+      { name: "업데이트 가져오기", value: "update" },
       { name: "상태 확인", value: "status" },
       { name: "로그 보기", value: "logs" },
       { name: "재시작", value: "restart" },
@@ -738,6 +1150,9 @@ async function runCommandFromName(commandName, repoRoot) {
   switch (commandName) {
     case "configure":
       await runConfigure(repoRoot);
+      return;
+    case "update":
+      await updateQuickstart(repoRoot);
       return;
     case "start":
       await ensureEnvExists(repoRoot);

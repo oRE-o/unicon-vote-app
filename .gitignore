@@ -9,6 +9,7 @@ build/
 .env
 .env.local
 .env.backup.*
+unicon-vote-frontend/nginx.quickstart.generated.conf
 
 *.log
 npm-debug.log*

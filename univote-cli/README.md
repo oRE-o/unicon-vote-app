@@ -6,6 +6,7 @@
 
 - `.env` 마법사 생성
 - quickstart Docker Compose 실행
+- 최신 코드 pull + 재빌드 업데이트
 - Docker 자동 시작 점검
 - 프론트/백엔드 연결 확인
 - 관리자 로그인 QR 출력
@@ -33,6 +34,7 @@ univote
 ```bash
 univote
 univote configure
+univote update
 univote status
 univote logs
 univote qr

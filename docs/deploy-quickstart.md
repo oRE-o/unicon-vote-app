@@ -6,8 +6,8 @@
 
 - Docker Hub 이미지를 미리 준비하지 않아도 됨
 - 서버에서 직접 이미지 빌드
-- 기본은 HTTP
-- HTTPS와 도메인은 나중에 붙여도 됨
+- 도메인이 있으면 quickstart 단계에서 HTTPS까지 붙일 수 있음
+- 도메인이 아직 없으면 HTTP로 먼저 띄우는 것도 가능함
 
 ## 요구사항
 
@@ -28,11 +28,13 @@ sudo usermod -aG docker $USER
 ## 1. 프로젝트 받기
 
 ```bash
-git clone <REPOSITORY_URL>
+git clone https://github.com/oRE-o/unicon-vote-app
 cd unicon-vote-app
 ```
 
 직접 `.env`를 편집하는 대신 화살표 기반 마법사를 쓰고 싶다면 [univote CLI](./univote-cli.md)를 먼저 보세요.
+
+특히 HTTPS는 `univote` 마법사를 쓰는 쪽이 훨씬 쉽습니다.
 
 ## 2. 환경변수 만들기
 
@@ -57,6 +59,9 @@ ADMIN_PASSWORD=ChangeMe1234!
 MONGO_ROOT_USER=unicon
 MONGO_ROOT_PASSWORD=ChangeMongoPassword123!
 CORS_ORIGIN=http://YOUR_SERVER_IP
+ENABLE_HTTPS=false
+LETSENCRYPT_EMAIL=
+FRONTEND_NGINX_CONFIG=./unicon-vote-frontend/nginx.http.conf
 SEED_SAMPLE_DATA=false
 ```
 
@@ -72,6 +77,8 @@ CORS_ORIGIN=http://YOUR_SERVER_IP,https://vote.example.com
 docker compose -f docker-compose.quickstart.yml up -d --build
 ```
 
+HTTPS까지 같이 쓰려면 quickstart만으로는 nginx 설정과 인증서 발급 절차를 직접 처리해야 해서, 보통은 아래 쪽보다 `univote configure`를 권장합니다.
+
 ## 4. 확인
 
 ```bash
@@ -79,10 +86,41 @@ docker compose -f docker-compose.quickstart.yml ps
 docker compose -f docker-compose.quickstart.yml logs -f backend frontend
 ```
 
+## 4-1. 나중에 최신 변경사항 반영하기
+
+이 저장소는 이제 GitHub push 때마다 자동 배포하지 않습니다.
+
+대신 운영 서버에서 필요할 때 아래 명령으로 최신 변경사항을 반영합니다.
+
+```bash
+cd ~/unicon-vote-app
+univote update
+```
+
+이 명령이 하는 일:
+
+- `origin/main` 최신 커밋 확인
+- `git pull --ff-only origin main`
+- `univote-cli` 의존성 동기화
+- quickstart 컨테이너 재빌드 및 재시작
+- health 체크
+- 관리자 로그인 URL과 QR 다시 출력
+
+업데이트가 멈춘다면 보통 아래 둘 중 하나입니다.
+
+- 서버 저장소에 직접 수정한 파일이 남아 있음
+- 현재 브랜치가 `main`이 아니거나 원격과 fast-forward 불가능한 상태임
+
 접속 주소:
 
 ```text
 http://SERVER_IP
+```
+
+도메인과 인증서를 붙였다면:
+
+```text
+https://YOUR_DOMAIN
 ```
 
 ## 5. 관리자 로그인
@@ -97,6 +135,13 @@ http://SERVER_IP/login?uuid=<ADMIN_UUID>
 
 ```text
 http://SERVER_IP/admin
+```
+
+도메인 + HTTPS를 붙였다면 아래처럼 접속하면 됩니다.
+
+```text
+https://YOUR_DOMAIN/login?uuid=<ADMIN_UUID>
+https://YOUR_DOMAIN/admin
 ```
 
 ## 샘플 데이터 여부
@@ -128,6 +173,7 @@ SEED_SAMPLE_DATA=true
 - [`docker-compose.quickstart.yml`](../docker-compose.quickstart.yml)
 - [`.env.example`](../.env.example)
 - [`unicon-vote-frontend/nginx.http.conf`](../unicon-vote-frontend/nginx.http.conf)
+- `unicon-vote-frontend/nginx.quickstart.generated.conf` (CLI가 HTTPS/HTTP 모드에 맞게 생성)
 
 ## 기존 운영 방식과의 차이
 
