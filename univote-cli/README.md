@@ -21,8 +21,8 @@
 
 ```bash
 cd univote-cli
-npm install
-npm link
+pnpm install
+pnpm link --global
 ```
 
 이후 프로젝트 루트로 돌아와서 실행하세요.
@@ -30,6 +30,21 @@ npm link
 ```bash
 cd ..
 univote
+```
+
+`pnpm`이 없다면 먼저 아래를 실행하세요.
+
+```bash
+corepack enable
+corepack prepare pnpm@10.10.0 --activate
+```
+
+`node` 자체가 없다면 먼저 Node.js 20 LTS를 설치한 뒤 위 명령을 실행하세요.
+
+`pnpm link --global`이 실패하면 아래를 한 번 실행한 뒤 새 터미널에서 다시 시도하면 됩니다.
+
+```bash
+pnpm setup
 ```
 
 ## 주요 명령

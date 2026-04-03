@@ -8,13 +8,21 @@
 
 - Node.js 18 이상
 - pnpm
-- MongoDB
+- MongoDB 또는 Docker
 
 `pnpm`이 없다면 먼저 설치하세요.
 
 ```bash
-npm install -g pnpm
+corepack enable
+corepack prepare pnpm@10.10.0 --activate
 ```
+
+중요:
+
+- quickstart 서버 실행에는 MongoDB를 따로 설치할 필요가 없습니다.
+- [로컬 시험장](./local-test-lab.md)도 MongoDB를 Docker로 자동 처리합니다.
+- 이 문서처럼 개발 환경을 직접 띄울 때만 MongoDB가 필요합니다.
+- MongoDB를 직접 설치하고 싶지 않다면 아래의 Docker 방식으로 대체할 수 있습니다.
 
 ## Backend
 

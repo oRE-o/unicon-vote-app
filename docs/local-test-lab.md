@@ -22,6 +22,12 @@
 
 - Docker Desktop 또는 Docker Engine
 
+이 방식은 아래가 없어도 됩니다.
+
+- pnpm
+- MongoDB 직접 설치
+- Node.js 개발 환경
+
 ## 1. 시험장 시작
 
 프로젝트 루트에서 아래를 실행하세요.

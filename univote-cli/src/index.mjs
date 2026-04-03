@@ -539,10 +539,19 @@ async function pullLatestChanges(repoRoot) {
 
 async function syncUnivoteCliDependencies(repoRoot) {
   section("CLI 의존성 확인");
-  await runCommand("npm", ["install", "--no-fund", "--no-audit"], {
-    cwd: path.join(repoRoot, "univote-cli"),
-    stdio: "inherit",
-  });
+  try {
+    await runCommand("pnpm", ["install"], {
+      cwd: path.join(repoRoot, "univote-cli"),
+      stdio: "inherit",
+    });
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      throw new Error(
+        "pnpm 명령을 찾지 못했습니다. 먼저 Node.js 와 pnpm(corepack enable / corepack prepare pnpm@10.10.0 --activate)을 설치해주세요."
+      );
+    }
+    throw error;
+  }
   success("univote-cli 의존성을 동기화했습니다.");
 }
 

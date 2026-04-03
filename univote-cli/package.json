@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Interactive quickstart CLI for the UNICON Vote App",
   "type": "module",
+  "packageManager": "pnpm@10.10.0",
   "bin": {
     "univote": "./src/index.mjs"
   },

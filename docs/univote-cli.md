@@ -29,9 +29,27 @@
 ## 요구사항
 
 - Node.js 18 이상
-- npm
+- pnpm
 - Docker
 - Linux 서버라면 `systemctl` 또는 `sudo` 사용 가능 환경이면 더 좋음
+
+확인 명령:
+
+```bash
+node --version
+pnpm --version
+docker --version
+docker compose version
+```
+
+`pnpm`이 없다면 보통 아래처럼 준비하면 됩니다.
+
+```bash
+corepack enable
+corepack prepare pnpm@10.10.0 --activate
+```
+
+`node` 자체가 없다면 먼저 Node.js 20 LTS를 설치한 뒤 위 명령을 실행하세요.
 
 ## 설치
 
@@ -41,9 +59,15 @@
 
 ```bash
 cd univote-cli
-npm install
-npm link
+pnpm install
+pnpm link --global
 cd ..
+```
+
+`pnpm link --global`이 전역 bin 디렉터리 오류로 실패하면 아래를 한 번 실행한 뒤 새 터미널을 열고 다시 시도하세요.
+
+```bash
+pnpm setup
 ```
 
 이후부터는 프로젝트 루트에서 아래처럼 실행합니다.

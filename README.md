@@ -22,6 +22,13 @@ cd ~/unicon-vote-app
 univote update
 ```
 
+## 시작 전에 미리 알아둘 점
+
+- 이 프로젝트 문서는 `pnpm` 기준으로 안내합니다.
+- quickstart 서버 실행에는 MongoDB를 따로 설치할 필요가 없습니다.
+- 로컬 시험장도 MongoDB를 직접 설치할 필요 없이 Docker가 자동으로 처리합니다.
+- MongoDB를 직접 설치해야 하는 경우는 보통 [로컬 개발](./docs/local-development.md)처럼 코드를 수정하면서 개발할 때뿐입니다.
+
 ## 1. 가장 빠른 유니콘 투표시스템 구동
 
 ### 1-1. 준비할 것
@@ -30,6 +37,11 @@ univote update
 - 권장 사양: `2 vCPU / 4GB RAM / 20GB 이상 디스크`
 - 권장 운영체제: `Ubuntu 22.04` 또는 `Ubuntu 24.04`
 - 서버 접속용 SSH 계정
+- `git`
+- `docker`
+- `docker compose`
+- `node` 18 이상
+- `pnpm`
 - 선택 사항: 도메인 1개
 
 처음이라면 아래 같은 클라우드에서 한 대 빌리는 방식이 가장 편합니다.
@@ -54,6 +66,42 @@ univote update
 - HTTPS를 붙여야 하므로 `443`도 열기
 - 도메인을 쓸 경우 A 레코드를 서버 공인 IP로 연결
 
+설치 여부를 빠르게 확인하는 명령:
+
+```bash
+git --version
+docker --version
+docker compose version
+node --version
+pnpm --version
+```
+
+만약 `pnpm`이 없다면 보통 아래처럼 준비하면 됩니다.
+
+```bash
+corepack enable
+corepack prepare pnpm@10.10.0 --activate
+```
+
+만약 `node` 자체가 없다면 먼저 Node.js 20 LTS를 설치한 뒤 위의 `corepack` 명령을 실행하세요.
+
+Ubuntu 서버에서 한 번에 준비하는 예시:
+
+```bash
+sudo apt update
+sudo apt install -y git docker.io docker-compose-plugin curl
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+corepack enable
+corepack prepare pnpm@10.10.0 --activate
+sudo usermod -aG docker $USER
+```
+
+이후에는 한 번 다시 로그인한 뒤 진행하는 편이 안전합니다.
+
+만약 `docker`나 `docker compose`가 없다면 Docker Engine과 Docker Compose Plugin을 먼저 설치해야 합니다.  
+Ubuntu 서버 예시는 [서버 빠른 실행 문서](./docs/deploy-quickstart.md)에 정리해 두었습니다.
+
 보안상 권장:
 
 - `5001`, `27017` 포트는 외부 인터넷에 열지 않는 것을 권장합니다.
@@ -77,8 +125,8 @@ quickstart는 HTTP와 HTTPS 둘 다 가능합니다.
 git clone https://github.com/oRE-o/unicon-vote-app
 cd unicon-vote-app
 cd univote-cli
-npm install
-npm link
+pnpm install
+pnpm link --global
 cd ..
 univote
 ```
@@ -88,9 +136,15 @@ univote
 처음 하는 사람이라면 아래처럼 이해하면 됩니다.
 
 - `git clone`: 저장소 받기
-- `npm install`: CLI 설치 준비
-- `npm link`: `univote` 명령을 어디서든 쓸 수 있게 연결
+- `pnpm install`: CLI 설치 준비
+- `pnpm link --global`: `univote` 명령을 어디서든 쓸 수 있게 연결
 - `univote`: 설정 마법사 실행
+
+`pnpm link --global`에서 전역 bin 경로 관련 오류가 나면 아래를 한 번 실행한 뒤 새 터미널을 열고 다시 시도하세요.
+
+```bash
+pnpm setup
+```
 
 이 CLI가 자동으로 해주는 일:
 
