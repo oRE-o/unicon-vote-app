@@ -224,23 +224,34 @@ ensure_local_bin_on_path() {
   success "~/.local/bin 경로를 준비했습니다."
 }
 
-launch_univote() {
-  section "univote 실행"
+run_univote_configure_with_tty() {
+  if [[ ! -r /dev/tty ]] || [[ ! -w /dev/tty ]]; then
+    warn "현재 세션에서 대화형 터미널을 바로 열 수 없어 자동 실행을 건너뜁니다."
+    warn "아래 명령을 직접 실행해주세요."
+    printf '\n%s\n' "univote configure"
+    return
+  fi
 
   if [[ "${DOCKER_GROUP_ADDED}" == "true" ]]; then
     if command -v sg >/dev/null 2>&1; then
-      info "docker 그룹 권한을 현재 실행에 반영해 univote를 시작합니다."
-      sg docker -c "\"${WRAPPER_PATH}\""
+      local sg_command="\"${WRAPPER_PATH}\" configure </dev/tty >/dev/tty 2>/dev/tty"
+      info "docker 그룹 권한을 현재 실행에 반영해 설정 마법사를 시작합니다."
+      sg docker -c "${sg_command}"
       return
     fi
 
     warn "현재 세션에 docker 그룹 권한을 즉시 반영할 수 없어 자동 실행을 건너뜁니다."
     warn "새로 로그인한 뒤 아래 명령을 실행해주세요."
-    printf '\n%s\n' "univote"
+    printf '\n%s\n' "univote configure"
     return
   fi
 
-  "${WRAPPER_PATH}"
+  "${WRAPPER_PATH}" configure </dev/tty >/dev/tty 2>/dev/tty
+}
+
+launch_univote() {
+  section "univote 실행"
+  run_univote_configure_with_tty
 }
 
 main() {
@@ -263,6 +274,7 @@ main() {
 
   info "이제부터는 보통 아래 명령만 기억하면 됩니다."
   printf '\n%s\n' "  univote"
+  printf '%s\n' "  univote configure"
   printf '%s\n\n' "  univote update"
 
   launch_univote
