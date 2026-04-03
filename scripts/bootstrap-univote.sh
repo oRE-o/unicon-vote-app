@@ -11,6 +11,7 @@ PNPM_VERSION="10.10.0"
 DOCKER_GROUP_ADDED="false"
 IS_ROOT="false"
 SUDO_CMD="sudo"
+SKIP_DOCKER_PACKAGES="${SKIP_DOCKER_PACKAGES:-0}"
 
 section() {
   printf '\n== %s ==\n' "$1"
@@ -66,6 +67,22 @@ install_base_packages() {
 
 ensure_docker_packages() {
   section "Docker 패키지 확인"
+
+  if [[ "${SKIP_DOCKER_PACKAGES}" == "1" ]]; then
+    warn "SKIP_DOCKER_PACKAGES=1 이 설정되어 있어 Docker 패키지 설치는 건너뜁니다."
+
+    if ! command -v docker >/dev/null 2>&1; then
+      fail "Docker 패키지 설치를 건너뛰도록 설정했지만 docker 명령을 찾지 못했습니다."
+    fi
+
+    if docker compose version >/dev/null 2>&1; then
+      success "기존 Docker / docker compose 설치를 그대로 사용합니다."
+    else
+      warn "docker compose 플러그인은 자동 설치하지 않았습니다. compose 명령이 없다면 수동 확인이 필요합니다."
+    fi
+
+    return
+  fi
 
   if command -v docker >/dev/null 2>&1; then
     success "docker 명령이 이미 설치되어 있습니다."
