@@ -4,6 +4,12 @@ import type { Game } from "../types";
 type Criterion = "impressive" | "fun" | "original" | "polished";
 type Medal = "gold" | "silver" | "bronze";
 
+const MEDAL_LABELS: Record<Medal, string> = {
+  gold: "금",
+  silver: "은",
+  bronze: "동",
+};
+
 interface VoteModalProps {
   game: Game;
   isOpen: boolean;
@@ -11,7 +17,8 @@ interface VoteModalProps {
   onVote: (criterion: Criterion, medal: Medal) => void;
   onCancelVote: (criterion: Criterion) => void;
   usedMedals: Record<string, { gameId: string }>;
-  votesForThisGame: Record<string, string>;
+  votesForThisGame: Partial<Record<Criterion, Medal>>;
+  isSubmitting?: boolean;
 }
 
 const CRITERIA: { key: Criterion; name: string }[] = [
@@ -21,12 +28,12 @@ const CRITERIA: { key: Criterion; name: string }[] = [
   { key: "polished", name: "완성도" },
 ];
 const MEDALS: Medal[] = ["gold", "silver", "bronze"];
-const MEDAL_COLORS: Record<string, string> = {
-  gold: "bg-yellow-400 border-yellow-500 hover:bg-yellow-500 text-white", // 텍스트 색상 명시
-  silver: "bg-gray-300 border-gray-400 hover:bg-gray-400 text-gray-800", // ✨ 실버 색상 수정: 배경 살짝 어둡게, 텍스트는 어둡게
-  bronze: "bg-orange-400 border-orange-500 hover:bg-orange-500 text-white", // 텍스트 색상 명시
+const MEDAL_COLORS: Record<Medal, string> = {
+  gold: "border-yellow-400 bg-yellow-400/20 text-yellow-100",
+  silver: "border-slate-300 bg-slate-300/20 text-slate-100",
+  bronze: "border-orange-400 bg-orange-400/20 text-orange-100",
 };
-const MEDAL_ICONS: Record<string, string> = {
+const MEDAL_ICONS: Record<Medal, string> = {
   gold: "🥇",
   silver: "🥈",
   bronze: "🥉",
@@ -40,21 +47,25 @@ function VoteModal({
   onCancelVote,
   usedMedals,
   votesForThisGame,
+  isSubmitting = false,
 }: VoteModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box">
+    <div className="modal modal-open modal-bottom sm:modal-middle">
+      <div className="modal-box max-w-3xl rounded-t-[2rem] border border-base-300 bg-base-100 px-4 pb-4 pt-5 sm:rounded-[2rem] sm:px-6">
         <button
           onClick={onClose}
           className="btn btn-sm btn-circle absolute right-2 top-2"
         >
           ✕
         </button>
-        <h3 className="font-bold text-lg mb-4">{game.name}에 투표하기</h3>
+        <div className="pr-10">
+          <div className="badge badge-outline inline-flex w-fit max-w-full items-center px-4 leading-none">메달 선택</div>
+          <h3 className="mt-3 text-2xl font-bold leading-snug">{game.name}에 메달 주기</h3>
+        </div>
 
-        <div className="space-y-3">
+        <div className="mt-4 space-y-2.5">
           {CRITERIA.map(({ key, name }) => {
             const currentMedalForThisCriterion = votesForThisGame[key];
             const isImpressive = key === "impressive";
@@ -62,107 +73,74 @@ function VoteModal({
             return (
               <div
                 key={key}
-                className={`p-2 rounded-lg ${
-                  /* p-2로 패딩 줄임 */
-                  isImpressive ? "bg-primary/10 border border-primary/30" : ""
+                className={`rounded-2xl border p-3 ${
+                  isImpressive
+                    ? "border-primary/40 bg-primary/10 shadow-lg shadow-primary/5"
+                    : "border-base-300 bg-base-200/50"
                 }`}
               >
-                {/* --- 헤드라인 (변경 없음) --- */}
-                <div className="flex flex-col items-center gap-0 mb-1">
-                  {" "}
-                  {/* gap-0, mb-1로 더 줄임 */}
-                  <h4
-                    className={`font-semibold text-lg ${
-                      /* 글자 크기 살짝 줄임 */
-                      isImpressive ? "text-primary" : ""
-                    }`}
-                  >
-                    {name}
-                  </h4>
-                  {isImpressive && (
-                    <span className="text-primary font-bold text-xs">
-                      {" "}
-                      {/* 글자 크기 조정 */}* 주요 평가 항목
-                    </span>
-                  )}
-                  <div className="divider w-1/2 mx-auto my-0"></div>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className={`text-base font-semibold md:text-lg ${isImpressive ? "text-primary" : ""}`}>
+                        {name}
+                      </h4>
+                      {isImpressive && (
+                        <span className="badge badge-primary badge-outline">주요 평가 항목</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="badge badge-ghost h-auto px-3 py-2 text-xs">
+                    {currentMedalForThisCriterion
+                      ? `${MEDAL_LABELS[currentMedalForThisCriterion]}메달 선택됨`
+                      : "아직 선택 안 함"}
+                  </div>
                 </div>
 
-                {/* --- 👇 버튼 크기 및 간격 또 줄임 --- */}
-                <div className="flex justify-center gap-2 mt-2">
-                  {" "}
-                  {/* gap-2, mt-2로 줄임 */}
+                <div className="mt-3 grid grid-cols-3 gap-2">
                   {MEDALS.map((medal) => {
                     const isMedalUsedOnAnotherGame =
                       usedMedals[`${key}-${medal}`] &&
                       usedMedals[`${key}-${medal}`].gameId !== game._id;
 
                     const isSelected = currentMedalForThisCriterion === medal;
-
-                    const tooltipText = isMedalUsedOnAnotherGame
-                      ? "다른 게임에 사용"
-                      : isSelected
-                      ? `${medal} (선택 취소)`
-                      : medal;
-
-                    // --- 👇 버튼 크기 또 줄임 (w-12 h-12, text-xl) ---
-                    let buttonClass = `btn btn-circle text-xl p-2 w-12 h-12`;
-
-                    if (isSelected) {
-                      buttonClass += ` ${MEDAL_COLORS[medal]} border-2`;
-                      if (medal === "silver")
-                        buttonClass = buttonClass.replace(
-                          "text-white",
-                          "text-gray-800"
-                        );
-                    } else {
-                      buttonClass += ` btn-outline border-2`;
-                    }
-
                     const isDisabled =
+                      isSubmitting ||
                       isMedalUsedOnAnotherGame ||
                       (!!currentMedalForThisCriterion && !isSelected);
-                    if (isDisabled) {
-                      buttonClass += ` btn-disabled opacity-50`;
-                    }
+
+                    const buttonClass = [
+                      "btn h-auto min-h-0 rounded-2xl border-2 px-1 py-2 text-xs font-semibold transition-all duration-200 md:px-2 md:py-3 md:text-sm",
+                      isSelected
+                        ? MEDAL_COLORS[medal]
+                        : "border-base-300 bg-base-100 text-base-content hover:border-primary/40 hover:bg-base-200",
+                      isDisabled ? "btn-disabled opacity-50" : "",
+                    ]
+                      .join(" ")
+                      .trim();
 
                     return (
-                      <div
+                      <button
                         key={medal}
-                        className="tooltip"
-                        data-tip={tooltipText}
+                        className={buttonClass}
+                        disabled={isDisabled}
+                        onClick={() =>
+                          isSelected ? onCancelVote(key) : onVote(key, medal)
+                        }
                       >
-                        <button
-                          className={buttonClass}
-                          disabled={isDisabled}
-                          onClick={() =>
-                            isSelected ? onCancelVote(key) : onVote(key, medal)
-                          }
-                        >
-                          {MEDAL_ICONS[medal]}
-                        </button>
-                      </div>
+                        <span className="text-xl md:text-2xl">{MEDAL_ICONS[medal]}</span>
+                        <span>{MEDAL_LABELS[medal]}</span>
+                      </button>
                     );
                   })}
                 </div>
-
-                {isImpressive && (
-                  <p className="text-xs text-base-content/70 mt-1 text-center">
-                    {" "}
-                    {/* mt-1로 줄임 */}
-                    🏆 "인상깊음" 항목은 주된 수상 순위 결정에 반영되며,
-                    <br /> 나머지 항목은 각 항목당 한 팀의 특별상 시상에
-                    반영됩니다.
-                  </p>
-                )}
               </div>
             );
           })}
         </div>
 
-        <div className="modal-action mt-4">
-          {" "}
-          {/* mt-4로 줄임 */}
+        <div className="modal-action mt-3">
           <button className="btn" onClick={onClose}>
             완료
           </button>

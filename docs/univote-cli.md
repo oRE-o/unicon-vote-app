@@ -36,6 +36,30 @@ sudo apt-get update && sudo apt-get install -y curl ca-certificates && curl -fsS
 - 관리자 로그인 QR까지 바로 보고 싶을 때
 - 도메인이 있을 때 HTTPS까지 한 번에 붙이고 싶을 때
 
+## 기능 한눈에 보기
+
+### 최초 설정 / 빠른 진입
+
+- `univote`
+- `univote configure`
+- `univote experimental`
+
+### 운영 중 자주 쓰는 명령
+
+- `univote update`
+- `univote start`
+- `univote restart`
+- `univote status`
+- `univote logs`
+- `univote qr`
+
+### 정리 / 진단
+
+- `univote stop`
+- `univote down`
+- `univote doctor`
+- `univote experimental-down`
+
 ## 현재 하는 일
 
 - 저장소 루트를 자동 탐색
@@ -116,6 +140,8 @@ univote
 화살표로 아래 메뉴를 고를 수 있습니다.
 
 - 빠른 설정 + 시작
+- 실험 모드로 바로 실행
+- 실험 모드 정리
 - 업데이트 가져오기
 - 상태 확인
 - 로그 보기
@@ -126,6 +152,8 @@ univote
 - 진단 실행
 
 처음이라면 보통 `빠른 설정 + 시작` 하나만 알면 충분합니다.
+
+DNS 없이 앱만 빨리 눌러보고 싶다면 `실험 모드로 바로 실행` 이 가장 빠릅니다.
 
 ### 2. 빠른 설정 + 시작
 
@@ -151,6 +179,23 @@ univote
 
 즉, 사람이 직접 `.env`를 채우고 `docker compose`를 여러 번 실행하는 일을 줄여주는 도구라고 생각하면 됩니다.
 
+### 2-1. 실험 모드로 바로 실행
+
+이 메뉴는 **실운영 quickstart와 별도인 로컬 시험장**을 바로 띄웁니다.
+
+- DNS 필요 없음
+- HTTPS 필요 없음
+- 샘플 사용자 / 샘플 게임 / 관리자 계정 자동 생성
+- `docker-compose.local-lab.yml` 기반 mock 환경 사용
+
+즉, “일단 서비스 화면부터 보고 싶다”면 이 경로가 더 빠릅니다.
+
+정리할 때는 아래를 쓰면 됩니다.
+
+```bash
+univote experimental-down
+```
+
 ## 서브커맨드
 
 직접 명령으로도 쓸 수 있습니다.
@@ -158,6 +203,8 @@ univote
 ```bash
 univote
 univote configure
+univote experimental
+univote experimental-down
 univote update
 univote start
 univote status
@@ -175,6 +222,11 @@ univote doctor
 - `univote update`: 최신 변경사항 반영
 - `univote status`: 현재 상태 확인
 - `univote qr`: 관리자 로그인 QR 다시 보기
+
+그리고 DNS 없이 시험만 할 거라면 아래 두 개도 자주 씁니다.
+
+- `univote experimental`
+- `univote experimental-down`
 
 ## 업데이트 적용
 
@@ -259,3 +311,9 @@ univote start
 - 이 CLI는 현재 `docker-compose.quickstart.yml` 전용입니다.
 - HTTPS는 도메인과 80/443 포트가 준비된 경우에만 정상 발급됩니다.
 - 외부에서 접속이 안 될 경우에는 서버 방화벽, 클라우드 보안 그룹, 리버스 프록시 설정도 같이 확인해야 합니다.
+
+실운영 준비 전에 아래 문서를 같이 보면 편합니다.
+
+- [서버 빌리기 가이드](./server-rental-guide.md)
+- [DNS 연결 가이드](./dns-setup.md)
+- [포트 열기 / 방화벽 가이드](./port-opening.md)

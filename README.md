@@ -7,15 +7,11 @@ UNICON 행사에서 게임 투표를 진행하는 웹 앱입니다.
 
 ## Quickstart
 
-아래 한 줄을 실행하기 전에 먼저 준비해야 하는 것이 있습니다.
+실운영 서버 quickstart 전에 먼저 아래 문서를 보고 준비 상태를 맞추는 편이 안전합니다.
 
-1. 공개 IP가 있는 Linux 서버를 하나 빌리기
-2. SSH 접속용 `22` 포트 열기
-3. 웹 접속용 `80` 포트 열기
-4. HTTPS를 쓸 예정이면 `443` 포트도 열기
-5. 도메인을 쓸 예정이면 A 레코드를 서버 공인 IP에 연결하기
-
-즉, 서버 빌리기 / 포트 열기 / DNS 연결이 아직 안 되어 있다면 먼저 그 작업부터 해야 합니다.
+- [서버 빌리기 가이드](./docs/server-rental-guide.md)
+- [DNS 연결 가이드](./docs/dns-setup.md)
+- [포트 열기 / 방화벽 가이드](./docs/port-opening.md)
 
 가장 쉬운 방법은 아래 한 줄을 Ubuntu/Debian 서버에 그대로 붙여넣는 것입니다.
 
@@ -45,6 +41,118 @@ univote update
 ```
 
 자세한 설명은 아래를 참고하세요.
+
+## 어떤 경로로 시작하면 되나요?
+
+- **운영 서버를 처음 띄운다** → [univote CLI](./docs/univote-cli.md)
+- **CLI 없이 직접 배포한다** → [서버 빠른 실행](./docs/deploy-quickstart.md)
+- **DNS 없이 로컬에서 바로 눌러본다** → [로컬 시험장](./docs/local-test-lab.md)
+- **개발 환경을 잡는다** → [로컬 개발](./docs/local-development.md)
+
+## univote 기능 / 명령어 모음
+
+### 메인 메뉴에서 할 수 있는 것
+
+- 빠른 설정 + 시작
+- 실험 모드로 바로 실행
+- 실험 모드 정리
+- 업데이트 가져오기
+- 상태 확인
+- 로그 보기
+- 재시작
+- 중지
+- compose down
+- 관리자 QR 보기
+- 진단 실행
+
+### 자주 쓰는 명령어
+
+#### 최초 설정 / 실행
+
+```bash
+univote
+univote configure
+univote experimental
+```
+
+#### 운영 중 자주 쓰는 명령
+
+```bash
+univote update
+univote start
+univote restart
+univote status
+univote logs
+univote qr
+```
+
+#### 정리 / 진단
+
+```bash
+univote stop
+univote down
+univote doctor
+univote experimental-down
+```
+
+자세한 기능 설명은 [univote CLI 문서](./docs/univote-cli.md)를 보세요.
+
+## macOS에서 로컬로 깔끔하게 실행하기
+
+맥에서 **실험 모드(local test lab)** 로만 눌러볼 거라면 Docker Desktop 중심으로도 가능합니다.  
+다만 `univote` CLI 자체를 쓰려면 Node.js가 필요합니다.
+
+### 1) 제일 가볍게 시험만 해보기
+
+이 경로는 `univote` 없이도 됩니다.
+
+```bash
+git clone https://github.com/oRE-o/unicon-vote-app
+cd unicon-vote-app
+./scripts/local-lab-up.sh
+```
+
+이 방식은 아래 특징이 있습니다.
+
+- Docker만 있으면 됨
+- DNS 필요 없음
+- 샘플 사용자 / 샘플 게임 / 관리자 계정 자동 생성
+- 끝나면 `./scripts/local-lab-down.sh` 로 정리 가능
+
+자세한 설명은 [로컬 시험장](./docs/local-test-lab.md)을 보세요.
+
+### 2) macOS에서 `univote` CLI까지 쓰기
+
+`univote` CLI 자체가 Node.js 위에서 실행되기 때문에 아래 3가지는 필요합니다.
+
+1. **Docker Desktop for Mac**
+2. **Node.js 20 LTS 이상**
+3. **pnpm** (`corepack`으로 준비 가능)
+
+가장 무난한 순서는 아래입니다.
+
+```bash
+git clone https://github.com/oRE-o/unicon-vote-app
+cd unicon-vote-app
+corepack enable
+corepack prepare pnpm@10.10.0 --activate
+cd univote-cli
+pnpm install
+pnpm link --global
+cd ..
+univote
+```
+
+즉, 맥에서는 보통 아래처럼 이해하면 됩니다.
+
+- **Docker Desktop**: 실제 프론트/백/DB 컨테이너 실행
+- **Node + pnpm**: `univote` CLI 실행
+
+주의:
+
+- `scripts/bootstrap-univote.sh` 는 **Ubuntu/Debian 서버용**입니다.
+- macOS에서는 bootstrap 스크립트를 그대로 쓰는 방식이 아니라, 위처럼 `univote-cli`를 직접 설치해서 쓰는 편이 맞습니다.
+- 맥 로컬 실행은 **개발/점검용**으로는 괜찮지만, 실제 행사 운영 서버는 공개 IP가 있는 Linux 서버를 권장합니다.
 
 ### private 저장소일 때
 

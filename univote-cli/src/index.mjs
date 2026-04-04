@@ -12,6 +12,7 @@ import dotenv from "dotenv";
 import qrcode from "qrcode-terminal";
 
 const QUICKSTART_COMPOSE_FILE = "docker-compose.quickstart.yml";
+const CLI_VERSION = "0.1.0";
 const GENERATED_NGINX_CONFIG_RELATIVE =
   "./unicon-vote-frontend/nginx.quickstart.generated.conf";
 const REQUIRED_MARKERS = [
@@ -26,13 +27,17 @@ const colors = {
   green: (text) => `\u001b[32m${text}\u001b[0m`,
   yellow: (text) => `\u001b[33m${text}\u001b[0m`,
   red: (text) => `\u001b[31m${text}\u001b[0m`,
+  magenta: (text) => `\u001b[35m${text}\u001b[0m`,
   dim: (text) => `\u001b[2m${text}\u001b[0m`,
+  brightCyan: (text) => `\u001b[96m${text}\u001b[0m`,
 };
 
 const HELP_TEXT = `Usage: univote [command]
 
 Commands
   configure   Interactive quickstart wizard
+  experimental Start local test lab without DNS
+  experimental-down Stop and clean local test lab
   update      Pull the latest repository changes and rebuild services
   start       docker compose up -d --build
   stop        Stop containers without removing data
@@ -43,10 +48,146 @@ Commands
   qr          Print the admin login QR in the terminal
   doctor      Check Docker, boot persistence, and app health
   help        Show this message
+
+Flags
+  -h, --help      Show help
+  -v, --version   Show CLI version
 `;
 
+const MENU_CHOICES = [
+  {
+    name: "[SETUP] 빠른 설정 + 시작",
+    value: "configure",
+    description: ".env를 만들고 바로 행사 서버를 올립니다.",
+  },
+  {
+    name: "[LAB] 실험 모드로 바로 실행",
+    value: "experimental",
+    description: "DNS 없이 로컬 시험장(mock 데이터 포함)을 바로 띄웁니다.",
+  },
+  {
+    name: "[LAB] 실험 모드 정리",
+    value: "experimental-down",
+    description: "로컬 시험장 컨테이너와 mock DB를 정리합니다.",
+  },
+  {
+    name: "[OPS] 업데이트 가져오기",
+    value: "update",
+    description: "최신 코드를 받아 재빌드하고 다시 띄웁니다.",
+  },
+  {
+    name: "[OPS] 상태 확인",
+    value: "status",
+    description: "컨테이너 상태와 앱 연결 상태를 점검합니다.",
+  },
+  {
+    name: "[OPS] 로그 보기",
+    value: "logs",
+    description: "프론트/백 로그를 따라가며 문제를 봅니다.",
+  },
+  {
+    name: "[OPS] 재시작",
+    value: "restart",
+    description: "현재 quickstart 서비스를 다시 시작합니다.",
+  },
+  {
+    name: "[OPS] 중지",
+    value: "stop",
+    description: "데이터는 유지한 채 컨테이너만 멈춥니다.",
+  },
+  {
+    name: "[OPS] compose down",
+    value: "down",
+    description: "컨테이너를 내리되 Mongo 볼륨은 유지합니다.",
+  },
+  {
+    name: "[ADMIN] 관리자 QR 보기",
+    value: "qr",
+    description: "관리자 로그인 URL과 QR을 다시 출력합니다.",
+  },
+  {
+    name: "[DIAG] 진단 실행",
+    value: "doctor",
+    description: "Docker, 자동 시작, 앱 health를 한 번에 확인합니다.",
+  },
+  {
+    name: "[EXIT] 종료",
+    value: "exit",
+    description: "아무 작업도 하지 않고 종료합니다.",
+  },
+];
+
+function clearScreen() {
+  if (process.stdout.isTTY) {
+    process.stdout.write("\x1Bc");
+  }
+}
+
+function hr(color = colors.dim) {
+  console.log(color("─".repeat(64)));
+}
+
+function printBanner(title, subtitle) {
+  console.log("");
+  hr(colors.magenta);
+  console.log(colors.bold(colors.magenta(`  ${title}`)));
+  if (subtitle) {
+    console.log(colors.dim(`  ${subtitle}`));
+  }
+  hr(colors.magenta);
+}
+
+function printHeroBlock(title, subtitle) {
+  const width = Math.min(process.stdout.columns || 96, 104);
+  const innerWidth = Math.max(40, width - 4);
+  const top = `╭${"─".repeat(innerWidth + 2)}╮`;
+  const bottom = `╰${"─".repeat(innerWidth + 2)}╯`;
+  const padLine = (text = "") => {
+    const visibleText = text.length > innerWidth ? `${text.slice(0, innerWidth - 1)}…` : text;
+    return `│ ${visibleText.padEnd(innerWidth, " ")} │`;
+  };
+
+  console.log(colors.magenta(top));
+  console.log(colors.magenta(padLine(colors.bold(title))));
+  if (subtitle) {
+    console.log(colors.magenta(padLine(colors.dim(subtitle))));
+  }
+  console.log(colors.magenta(bottom));
+}
+
+function renderControlCenter(repoRoot) {
+  clearScreen();
+  printHeroBlock(
+    "UNIVOTE Control Center",
+    "↑ ↓ 로 이동하고 Enter 로 실행합니다. 선택된 항목 설명은 아래에서 바로 볼 수 있습니다."
+  );
+  printPanel("현재 작업 위치", [repoRoot]);
+  printPanel("빠른 진입 가이드", [
+    "처음 운영 서버를 띄울 때: [SETUP] 빠른 설정 + 시작",
+    "DNS 없이 바로 시험할 때: [LAB] 실험 모드로 바로 실행",
+    "평소 운영 점검: [OPS] 상태 확인 / 로그 보기 / 업데이트 가져오기",
+  ]);
+}
+
+function getMenuPageSize() {
+  const terminalRows = process.stdout.rows || 24;
+  return Math.max(8, Math.min(MENU_CHOICES.length, terminalRows - 10));
+}
+
+function printPanel(title, lines = []) {
+  console.log(colors.bold(colors.cyan(`\n▶ ${title}`)));
+  lines.forEach((line) => {
+    console.log(`${colors.dim("  │")} ${line}`);
+  });
+}
+
+function summaryLine(label, value) {
+  const paddedLabel = `${label}`.padEnd(16, " ");
+  return `${colors.dim(paddedLabel)} ${value}`;
+}
+
 function section(title) {
-  console.log(`\n${colors.bold(colors.cyan(`== ${title} ==`))}`);
+  console.log(`\n${colors.bold(colors.cyan(`◆ ${title}`))}`);
 }
 
 function info(message) {
@@ -821,13 +962,31 @@ async function showLogs(repoRoot) {
 
 function printAdminAccess(envValues) {
   const adminLoginUrl = getDisplayLoginUrl(envValues);
+  const publicUrl = parseOrigins(envValues.CORS_ORIGIN || "")[0] || "http://localhost";
 
-  section("관리자 접속");
-  info(`메인 주소: ${parseOrigins(envValues.CORS_ORIGIN || "")[0] || "http://localhost"}`);
-  info(`관리자 로그인 URL: ${adminLoginUrl}`);
-  info(`관리자 비밀번호: ${envValues.ADMIN_PASSWORD}`);
+  printBanner("Setup Complete", "이제 브라우저와 QR로 바로 접속 테스트를 할 수 있습니다.");
+  printPanel("접속 정보", [
+    summaryLine("메인 주소", publicUrl),
+    summaryLine("관리자 로그인", adminLoginUrl),
+    summaryLine("관리자 비밀번호", maskValue(envValues.ADMIN_PASSWORD)),
+  ]);
+  printPanel("다음 권장 작업", [
+    "브라우저에서 메인 주소와 관리자 로그인 URL을 각각 열어보기",
+    "관리자 화면에서 게임/썸네일과 계정 준비 상태를 점검하기",
+  ]);
   console.log("");
   qrcode.generate(adminLoginUrl, { small: true });
+}
+
+function printAccessSummary(envValues) {
+  const adminLoginUrl = getDisplayLoginUrl(envValues);
+  const publicUrl = parseOrigins(envValues.CORS_ORIGIN || "")[0] || "http://localhost";
+
+  printPanel("접속 요약", [
+    summaryLine("메인 주소", publicUrl),
+    summaryLine("관리자 로그인", adminLoginUrl),
+    summaryLine("관리자 비밀번호", maskValue(envValues.ADMIN_PASSWORD)),
+  ]);
 }
 
 async function printQr(repoRoot) {
@@ -846,7 +1005,7 @@ async function updateQuickstart(repoRoot) {
   if (!hasUpdates) {
     const envValues = loadExistingEnv(repoRoot);
     await verifyQuickstart(repoRoot, envValues);
-    printAdminAccess(envValues);
+    printAccessSummary(envValues);
     return;
   }
 
@@ -855,7 +1014,7 @@ async function updateQuickstart(repoRoot) {
   const envValues = loadExistingEnv(repoRoot);
   await checkDockerBasics();
   await startQuickstart(repoRoot, envValues, { build: true });
-  printAdminAccess(envValues);
+  printAccessSummary(envValues);
 }
 
 async function runDoctor(repoRoot) {
@@ -896,9 +1055,18 @@ async function collectConfig(repoRoot) {
     seedSampleData: existingEnv.SEED_SAMPLE_DATA === "true",
   };
 
-  section("UNIVOTE Quickstart Wizard");
-  info(`작업 디렉토리: ${repoRoot}`);
-  info("이 마법사는 .env를 만들고 quickstart compose를 바로 띄우는 흐름입니다.");
+  printBanner(
+    "UNIVOTE Quickstart Wizard",
+    "처음 여는 사람도 따라가기 쉬운 행사 서버 설정 흐름"
+  );
+  printPanel("현재 작업 위치", [repoRoot]);
+  printPanel("이번에 하는 일", [
+    ".env 생성 또는 갱신",
+    "quickstart compose 실행",
+    "마지막에 관리자 접속 정보와 QR 출력",
+  ]);
+
+  section("1/4 접속 방식");
 
   const deploymentMode = await select({
     message: "접속 방식을 고르세요.",
@@ -907,10 +1075,12 @@ async function collectConfig(repoRoot) {
       {
         name: "HTTPS (추천, 실제 행사 운영용 / 도메인 필요)",
         value: "https",
+        description: "실제 행사 운영 환경. 80/443 포트와 도메인 연결이 필요합니다.",
       },
       {
         name: "HTTP (테스트용 또는 도메인 준비 전)",
         value: "http",
+        description: "로컬 테스트나 임시 점검에 적합합니다.",
       },
     ],
   });
@@ -958,6 +1128,9 @@ async function collectConfig(repoRoot) {
     validate: (value) => validateUrlList(value, true),
   });
 
+  section("2/4 보안값");
+  info("추천값을 그대로 쓰면 빠르게 시작할 수 있고, 원하면 직접 입력할 수도 있습니다.");
+
   const useRecommendedSecrets = await confirm({
     message: "관리자 UUID, 관리자 비밀번호, JWT, Mongo 비밀번호는 추천값을 그대로 사용할까요?",
     default: true,
@@ -1001,6 +1174,8 @@ async function collectConfig(repoRoot) {
     message: "실서버에 샘플 사용자/샘플 게임을 넣을까요?",
     default: recommendedValues.seedSampleData,
   });
+
+  section("3/4 스토리지 옵션");
 
   const configureStorage = await confirm({
     message: "관리자 화면에서 게임 썸네일 업로드를 쓰기 위해 S3 호환 스토리지를 지금 설정할까요?",
@@ -1085,24 +1260,28 @@ async function collectConfig(repoRoot) {
     S3_FORCE_PATH_STYLE: s3ForcePathStyle,
   };
 
-  section("적용 예정 값");
-  info(`기본 접속 주소: ${publicUrl}`);
-  info(`관리자 로그인 URL: ${getDisplayLoginUrl(envValues)}`);
-  info(`관리자 비밀번호: ${envValues.ADMIN_PASSWORD}`);
-  info(
-    envValues.ENABLE_HTTPS === "true"
-      ? `HTTPS: 사용 (${envValues.SERVER_DOMAIN})`
-      : "HTTPS: 사용 안 함"
-  );
-  info(`JWT 시크릿: ${maskValue(envValues.JWT_SECRET)}`);
-  info(`Mongo 루트 사용자: ${envValues.MONGO_ROOT_USER}`);
-  info(`Mongo 루트 비밀번호: ${maskValue(envValues.MONGO_ROOT_PASSWORD)}`);
-  info(`샘플 데이터: ${envValues.SEED_SAMPLE_DATA}`);
-  info(
-    envValues.S3_BUCKET
-      ? `게임 썸네일 업로드: 사용 (${envValues.S3_PUBLIC_BASE_URL || envValues.S3_BUCKET})`
-      : "게임 썸네일 업로드: 미사용 (URL 직접 입력만)"
-  );
+  section("4/4 적용 예정 값");
+  printPanel("설정 미리보기", [
+    summaryLine("기본 접속 주소", publicUrl),
+    summaryLine("관리자 로그인", getDisplayLoginUrl(envValues)),
+    summaryLine("관리자 비밀번호", envValues.ADMIN_PASSWORD),
+    summaryLine(
+      "HTTPS",
+      envValues.ENABLE_HTTPS === "true"
+        ? `사용 (${envValues.SERVER_DOMAIN})`
+        : "사용 안 함"
+    ),
+    summaryLine("JWT 시크릿", maskValue(envValues.JWT_SECRET)),
+    summaryLine("Mongo 사용자", envValues.MONGO_ROOT_USER),
+    summaryLine("Mongo 비밀번호", maskValue(envValues.MONGO_ROOT_PASSWORD)),
+    summaryLine("샘플 데이터", envValues.SEED_SAMPLE_DATA),
+    summaryLine(
+      "썸네일 업로드",
+      envValues.S3_BUCKET
+        ? `사용 (${envValues.S3_PUBLIC_BASE_URL || envValues.S3_BUCKET})`
+        : "미사용 (URL 직접 입력만)"
+    ),
+  ]);
 
   const shouldWrite = await confirm({
     message: ".env를 쓰고 quickstart를 시작할까요?",
@@ -1126,6 +1305,11 @@ async function collectConfig(repoRoot) {
 
 async function runConfigure(repoRoot) {
   const envValues = await collectConfig(repoRoot);
+  printPanel("이제 실제 실행을 시작합니다", [
+    "Docker 기본 상태 확인",
+    "필요하면 Docker 자동 시작 점검",
+    "quickstart compose 실행",
+  ]);
   await checkDockerBasics();
   await maybeEnableDockerAutostart();
   await startQuickstart(repoRoot, envValues);
@@ -1133,21 +1317,54 @@ async function runConfigure(repoRoot) {
   info("다음부터는 `univote status`, `univote logs`, `univote qr` 로 바로 관리할 수 있습니다.");
 }
 
+async function runExperimental(repoRoot) {
+  printBanner(
+    "UNIVOTE Experimental Mode",
+    "DNS 없이 로컬 시험장을 바로 띄우는 가장 빠른 확인 경로"
+  );
+  printPanel("이 모드의 특징", [
+    "Docker 기반 로컬 시험장을 실행합니다.",
+    "샘플 사용자 / 샘플 게임 / 관리자 계정이 자동으로 준비됩니다.",
+    "실운영 quickstart와는 분리된 mock 환경입니다.",
+  ]);
+  await runCommand("sh", [path.join(repoRoot, "scripts", "local-lab-up.sh")], {
+    cwd: repoRoot,
+    stdio: "inherit",
+  });
+  info("실운영 서버를 준비할 때는 `univote configure` 로 돌아가 DNS/HTTPS 설정을 진행하면 됩니다.");
+}
+
+async function runExperimentalDown(repoRoot) {
+  printBanner(
+    "UNIVOTE Experimental Cleanup",
+    "로컬 시험장 컨테이너와 mock DB를 깨끗하게 정리합니다."
+  );
+  await runCommand("sh", [path.join(repoRoot, "scripts", "local-lab-down.sh")], {
+    cwd: repoRoot,
+    stdio: "inherit",
+  });
+}
+
 async function runInteractiveMenu(repoRoot) {
+  renderControlCenter(repoRoot);
+
   const choice = await select({
-    message: "무엇을 할까요?",
-    choices: [
-      { name: "빠른 설정 + 시작", value: "configure" },
-      { name: "업데이트 가져오기", value: "update" },
-      { name: "상태 확인", value: "status" },
-      { name: "로그 보기", value: "logs" },
-      { name: "재시작", value: "restart" },
-      { name: "중지", value: "stop" },
-      { name: "compose down", value: "down" },
-      { name: "관리자 QR 보기", value: "qr" },
-      { name: "진단 실행", value: "doctor" },
-      { name: "종료", value: "exit" },
-    ],
+    message: colors.bold("실행할 작업을 선택하세요"),
+    pageSize: getMenuPageSize(),
+    theme: {
+      icon: {
+        cursor: colors.brightCyan(colors.bold("❯")),
+      },
+      indexMode: "number",
+      style: {
+        highlight: (text) => colors.brightCyan(colors.bold(text)),
+        description: (text) => colors.dim(text),
+        keysHelpTip: () => colors.dim("↑↓ move • enter select"),
+      },
+    },
+    choices: MENU_CHOICES,
+  }, {
+    clearPromptOnDone: true,
   });
 
   return choice;
@@ -1160,6 +1377,12 @@ async function runCommandFromName(commandName, repoRoot) {
     case "configure":
       await runConfigure(repoRoot);
       return;
+    case "experimental":
+      await runExperimental(repoRoot);
+      return;
+    case "experimental-down":
+      await runExperimentalDown(repoRoot);
+      return;
     case "update":
       await updateQuickstart(repoRoot);
       return;
@@ -1168,7 +1391,7 @@ async function runCommandFromName(commandName, repoRoot) {
       await checkDockerBasics();
       await maybeEnableDockerAutostart();
       await startQuickstart(repoRoot, envValues);
-      printAdminAccess(envValues);
+      printAccessSummary(envValues);
       return;
     case "stop":
       await ensureEnvExists(repoRoot);
@@ -1181,12 +1404,12 @@ async function runCommandFromName(commandName, repoRoot) {
     case "restart":
       await ensureEnvExists(repoRoot);
       await restartQuickstart(repoRoot, envValues);
-      printAdminAccess(envValues);
+      printAccessSummary(envValues);
       return;
     case "status":
       await ensureEnvExists(repoRoot);
       await verifyQuickstart(repoRoot, envValues);
-      printAdminAccess(envValues);
+      printAccessSummary(envValues);
       return;
     case "logs":
       await ensureEnvExists(repoRoot);
@@ -1201,9 +1424,24 @@ async function runCommandFromName(commandName, repoRoot) {
     case "help":
       console.log(HELP_TEXT);
       return;
+    case "version":
+      console.log(`univote-cli v${CLI_VERSION}`);
+      return;
     default:
       throw new Error(`알 수 없는 명령입니다: ${commandName}`);
   }
+}
+
+function normalizeCommandName(commandName) {
+  if (commandName === "-h" || commandName === "--help") {
+    return "help";
+  }
+
+  if (commandName === "-v" || commandName === "--version") {
+    return "version";
+  }
+
+  return commandName;
 }
 
 async function main() {
@@ -1214,7 +1452,8 @@ async function main() {
     );
   }
 
-  const commandName = process.argv[2];
+  const rawCommandName = process.argv[2];
+  const commandName = rawCommandName ? normalizeCommandName(rawCommandName) : rawCommandName;
 
   if (!commandName) {
     if (!process.stdin.isTTY) {

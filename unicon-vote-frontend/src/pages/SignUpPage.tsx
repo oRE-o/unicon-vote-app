@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import SplitText from "../components/reactbits/SplitText"; // SplitText 컴포넌트 경로 확인!
 import ErrorMessage from "../components/ErrorMessage"; // 1. ErrorMessage 컴포넌트 import
 import { API_BASE_URL } from "../api";
 
@@ -16,6 +15,7 @@ function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [uuidError, setUuidError] = useState(false); // UUID 관련 에러 상태
   const navigate = useNavigate(); // 페이지 이동을 위한 훅
   const [searchParams] = useSearchParams(); // URL 쿼리 파라미터를 읽기 위한 훅
@@ -62,7 +62,7 @@ function SignUpPage() {
           setUserName(fetchedName || "이름 없음"); // 혹시 모를 null 대비
           setWelcomeMessage(`${fetchedName || "방문객"}님, 환영해요!`);
         }
-      } catch (err) {
+      } catch (_err) {
         setError("사용자 정보를 불러오는 데 실패했습니다.");
       }
     };
@@ -83,119 +83,121 @@ function SignUpPage() {
       return;
     }
     try {
-      // 백엔드 API 호출
+      setIsSubmitting(true);
       await axios.post(`${API_BASE_URL}/api/auth/register`, {
         uuid: userId,
         password: password,
         name: userName,
       });
 
-      // 성공 시
-      alert("회원 설정이 완료되었습니다! 로그인 페이지로 이동합니다.");
-      navigate(`/login?uuid=${userId}`); // 로그인 페이지로 이동
-    } catch (err: any) {
-      // 실패 시 서버에서 보낸 에러 메시지를 표시
+      navigate(`/login?uuid=${userId}`);
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.message || "알 수 없는 오류가 발생했습니다.";
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "알 수 없는 오류가 발생했습니다.";
       setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const isNameInputDisabled =
     userRole !== "guest" || (userRole === "guest" && !!initialNameFromServer);
 
   return (
-    <div className="min-h-screen bg-base-100 flex flex-col items-center justify-center gap-3 p-6">
-      {/* 텍스트 애니메이션 */}
-      <SplitText
-        text={welcomeMessage}
-        className="text-3xl font-bold text-center"
-        delay={70}
-        duration={2}
-        ease="elastic.out"
-        splitType="chars"
-        from={{ opacity: 0, y: 20 }}
-        to={{ opacity: 1, y: 0 }}
-      />
-      <SplitText
-        text={welcomeMessage2}
-        className="text-xl font-semibold text-center"
-        delay={400}
-        duration={2}
-        ease="elastic.out"
-        splitType="words"
-        from={{ opacity: 0, y: 10 }}
-        to={{ opacity: 1, y: 0 }}
-      />
+    <div className="min-h-screen px-4 py-6 md:px-6 md:py-8">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-5xl items-center justify-center">
+        <div className="grid w-full gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <section className="order-1 space-y-3 text-center lg:order-1 lg:text-left">
+            <div className="badge badge-secondary badge-lg mx-auto w-fit whitespace-nowrap px-4 leading-none lg:mx-0">
+              첫 설정
+            </div>
+            <h1 className="mx-auto max-w-md text-3xl font-black leading-tight md:max-w-none md:text-4xl lg:mx-0">
+              {welcomeMessage}
+            </h1>
+            <p className="mx-auto max-w-md text-base font-semibold leading-6 text-base-content/90 md:max-w-none md:text-xl lg:mx-0">
+              {welcomeMessage2}
+            </p>
+            <p className="mx-auto max-w-xl text-sm leading-6 text-base-content/70 lg:mx-0">
+              처음 한 번만 설정하면 다음부터는 비밀번호만 입력하면 됩니다.
+            </p>
 
-      {/* 회원가입 폼 */}
-      <fieldset className="fieldset bg-base-200 border-base-300 rounded-box w-s border p-4  mt-2">
-        <legend className="fieldset-legend px-2 text-xl font-bold">
-          회원가입
-        </legend>
+            <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
+              <div className="badge badge-outline h-auto whitespace-nowrap px-4 py-3 leading-none">이름 확인</div>
+              <div className="badge badge-outline h-auto whitespace-nowrap px-4 py-3 leading-none">비밀번호 설정</div>
+              <div className="badge badge-outline h-auto whitespace-nowrap px-4 py-3 leading-none">공정하게 참여</div>
+            </div>
+          </section>
 
-        <label className="label mt-2">User ID</label>
-        <input
-          type="text"
-          value={userId}
-          className="input w-full input-disabled"
-          disabled
-        />
+          <section className="order-2 rounded-[2rem] border border-base-300 bg-base-200/90 p-4 shadow-2xl shadow-primary/10 backdrop-blur md:p-6 lg:order-2">
+            <div className="mb-4">
+              <div className="badge badge-outline inline-flex w-fit max-w-full items-center px-4 leading-none">회원 설정</div>
+              <h2 className="mt-3 text-2xl font-bold">처음 한 번만 설정하면 준비 완료예요</h2>
+              <p className="mt-2 text-sm text-base-content/70">비밀번호는 4자리 이상으로 입력해주세요.</p>
+            </div>
 
-        <label className="label mt-2">이름</label>
-        <input
-          type="text"
-          placeholder={userName}
-          className="input input-bordered w-full"
-          value={userName}
-          onChange={(e) => setUserName(e.target.value)}
-          disabled={isNameInputDisabled} // guest인 경우 이름 변경 불가
-        />
+            <fieldset className="fieldset gap-2">
+              <label className="label mt-1 text-sm">이름</label>
+              <input
+                type="text"
+                placeholder={userName}
+                className="input input-bordered w-full"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                disabled={isNameInputDisabled}
+              />
 
-        <label className="label  mt-2">비밀번호</label>
-        <input
-          type="password"
-          placeholder="••••••••"
-          className="input input-bordered w-full"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+              <label className="label mt-1 text-sm">비밀번호</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                className="input input-bordered w-full"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
 
-        <label className="label mt-2">비밀번호 확인</label>
-        <input
-          type="password"
-          placeholder="••••••••"
-          className="input input-bordered w-full"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
+              <label className="label mt-1 text-sm">비밀번호 확인</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                className="input input-bordered w-full"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
 
-        {/* 2. 체크박스 JSX 추가 */}
-        <div className="form-control mt-4">
-          <label className="label cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary"
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-            />
-            <span className="label-text">
-              유니콘을 즐겁게 즐기고 공정한 투표를 할 것을 약속합니다
-            </span>
-          </label>
+              <label className="label mt-3 cursor-pointer justify-start gap-3 rounded-2xl bg-base-100/70 px-4 py-3">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                />
+                <span className="label-text text-sm leading-6">
+                  UNICON을 즐겁게 체험하고 공정하게 투표하겠습니다.
+                </span>
+              </label>
+
+              {error && <ErrorMessage message={error} />}
+
+              <p className="text-sm text-base-content/70">
+                정보가 이상하거나 진행이 막히면 운영 인력에게 도움을 요청해주세요.
+              </p>
+
+              <button
+                onClick={() => void handleSignUp()}
+                className="btn btn-primary mt-4 mb-1 w-full"
+                disabled={
+                  !agreed || !password || !confirmPassword || uuidError || isSubmitting
+                }
+              >
+                {isSubmitting ? "설정 중..." : "회원 설정 완료"}
+              </button>
+            </fieldset>
+          </section>
         </div>
-
-        {/* 3. 버튼에 disabled 속성 추가 */}
-        {error && <ErrorMessage message={error} />}
-        <button
-          onClick={handleSignUp}
-          className="btn btn-neutral w-full mt-4 mb-4"
-          disabled={!agreed || !password || !confirmPassword || uuidError} // 약관 동의 및 비밀번호 입력 여부 검사
-        >
-          회원 설정 완료
-        </button>
-      </fieldset>
+      </div>
     </div>
   );
 }

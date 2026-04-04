@@ -8,6 +8,7 @@
 ## 할 수 있는 것
 
 - `.env` 마법사 생성
+- DNS 없이 로컬 시험장(mock 데이터) 바로 실행
 - quickstart Docker Compose 실행
 - 최신 코드 pull + 재빌드 업데이트
 - Docker 자동 시작 점검
@@ -47,11 +48,42 @@ corepack prepare pnpm@10.10.0 --activate
 pnpm setup
 ```
 
+## macOS에서 실행할 때
+
+macOS에서는 **Docker Desktop만 설치해서 끝나는 구조가 아닙니다.**
+
+- **Docker Desktop**: quickstart 컨테이너 실행
+- **Node.js 20 LTS 이상**: CLI 실행
+- **pnpm**: CLI 의존성 설치
+
+권장 순서:
+
+```bash
+git clone https://github.com/oRE-o/unicon-vote-app
+cd unicon-vote-app
+corepack enable
+corepack prepare pnpm@10.10.0 --activate
+cd univote-cli
+pnpm install
+pnpm link --global
+cd ..
+univote
+```
+
+즉, 맥에서는 보통 **Docker + Node + pnpm + univote CLI 설치**까지 되어 있어야 자연스럽게 실행됩니다.
+
+추가 메모:
+
+- 루트의 `scripts/bootstrap-univote.sh` 는 Ubuntu/Debian 서버용입니다.
+- macOS에서는 bootstrap 스크립트 대신 위 절차로 `univote`를 직접 설치해 쓰는 편이 맞습니다.
+
 ## 주요 명령
 
 ```bash
 univote
 univote configure
+univote experimental
+univote experimental-down
 univote update
 univote status
 univote logs
@@ -61,8 +93,16 @@ univote qr
 가장 많이 쓰는 것은 아래 세 가지입니다.
 
 - `univote`: 설정 메뉴 열기
+- `univote experimental`: DNS 없이 로컬 시험장 바로 실행
 - `univote update`: 최신 코드 반영 + 재빌드
 - `univote status`: 현재 상태 확인
+
+실운영 준비 문서는 아래를 참고하세요.
+
+- [상세 CLI 문서](../docs/univote-cli.md)
+- [서버 빌리기 가이드](../docs/server-rental-guide.md)
+- [DNS 연결 가이드](../docs/dns-setup.md)
+- [포트 열기 / 방화벽 가이드](../docs/port-opening.md)
 
 ## 주의
 

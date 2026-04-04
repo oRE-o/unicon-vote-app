@@ -1,8 +1,19 @@
+import { useMemo } from "react";
+
 function LoginRequiredPage() {
+  const reason = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("reason");
+  }, []);
+
   return (
     <div className="min-h-screen bg-base-100 flex flex-col items-center justify-center gap-6 p-4 text-center">
       <h1 className="text-4xl font-bold">🚫 앗! 안돼요!</h1>
-      <p className="text-base">이 페이지에 접근하려면 로그인이 필요합니다.</p>
+      <p className="text-base">
+        {reason === "expired"
+          ? "세션이 만료되어 다시 로그인이 필요합니다."
+          : "이 페이지에 접근하려면 로그인이 필요합니다."}
+      </p>
       <p className="text-base"> QR코드를 이용해주세용 :3 </p>
       <p className="text-sm">
         {" "}

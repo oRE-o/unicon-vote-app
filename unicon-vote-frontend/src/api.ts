@@ -22,6 +22,19 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+const handleUnauthorized = () => {
+  localStorage.removeItem("authToken");
+
+  const currentPath = window.location.pathname;
+  const nextPath = currentPath.startsWith("/admin")
+    ? "/admin-required"
+    : "/login-required";
+
+  if (currentPath !== nextPath) {
+    window.location.replace(nextPath);
+  }
+};
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("authToken");
@@ -31,6 +44,17 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      handleUnauthorized();
+    }
+
     return Promise.reject(error);
   }
 );

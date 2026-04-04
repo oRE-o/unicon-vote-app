@@ -4,6 +4,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUser extends Document {
   name: string;
   uuid: string;
+  braceletNumber?: string;
   password?: string;
   // --- 👇 수정 및 추가 ---
   role: "user" | "admin" | "guest"; // 'guest' 역할 추가
@@ -13,6 +14,7 @@ export interface IUser extends Document {
 const userSchema: Schema = new Schema({
   name: { type: String, required: true },
   uuid: { type: String, required: true, unique: true },
+  braceletNumber: { type: String, required: false, unique: true, sparse: true },
   password: { type: String, required: false },
   // Game 모델의 ObjectId를 배열 형태로 저장합니다.
   role: {

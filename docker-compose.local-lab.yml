@@ -20,6 +20,8 @@ services:
   frontend:
     build:
       context: ./unicon-vote-frontend
+      args:
+        VITE_DEMO_MODE: "true"
     container_name: unicon-local-lab-frontend
     depends_on:
       - backend

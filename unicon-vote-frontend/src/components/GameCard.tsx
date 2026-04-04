@@ -7,22 +7,33 @@ const MEDAL_ICONS: Record<string, string> = {
   bronze: "🥉",
 };
 
+const CATEGORY_META = {
+  Challenger: {
+    label: "챌린저",
+    badgeClass: "badge-error",
+  },
+  Rookie: {
+    label: "루키",
+    badgeClass: "badge-success",
+  },
+} as const;
+
 interface GameCardProps {
   game: Game;
-  voteCount: number;
   myVotes: Record<string, string>;
   currentUserName?: string;
   currentUserClub?: string;
   onVoteClick: () => void;
+  isVoteActionDisabled?: boolean;
 }
 
 function GameCard({
   game,
-  voteCount,
   myVotes,
   currentUserName,
   currentUserClub, // Props 변경
   onVoteClick,
+  isVoteActionDisabled = false,
 }: GameCardProps) {
   const uniqueClubs = Array.from(
     new Set(
@@ -39,61 +50,71 @@ function GameCard({
   const isMyClubGame: boolean =
     !!userDeveloperKey &&
     game.developers.some((dev) => dev === userDeveloperKey); // 정확히 일치하는지 비교
-  const categoryColor =
-    game.category === "Challenger" ? "badge-error" : "badge-success";
+  const medalEntries = Object.values(myVotes);
+  const categoryMeta = CATEGORY_META[game.category];
+
   return (
-    <div className="card bg-base-100 shadow-xl transition-transform duration-300 hover:scale-105 flex flex-col">
-      <figure className="aspect-video"> {/* 16:9 비율 (aspect-video) 클래스 추가 */}
+    <article className="card card-border bg-base-100 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
+      <figure className="aspect-video overflow-hidden rounded-t-3xl">
         <img
           src={game.imageUrl}
           alt={game.name}
-          className="h-full w-full object-cover" // 이미지가 16:9 컨테이너를 꽉 채우도록 수정
+          loading="lazy"
+          className="h-full w-full object-cover"
         />
       </figure>
-      <div className="card-body flex-grow">
-        <div className={`badge ${categoryColor} text-white self-start mb-2`}>
-          {game.category}
+      <div className="card-body gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className={`badge ${categoryMeta.badgeClass} badge-lg text-white`}>
+            {categoryMeta.label}
+          </div>
+          {isMyClubGame && <div className="badge badge-warning badge-lg">내 동아리 출품작</div>}
         </div>
-        <h2 className="card-title">{game.name}</h2>
-        {/* --- 동아리 정보 표시 --- */}
-        <div className="my-2 flex flex-wrap gap-1">
-          {uniqueClubs.map((club) => (
-            <div key={club} className="badge badge-secondary">
-              {club}
-            </div>
-          ))}
-        </div>
-        {/* --- 게임 설명 --- */}
-        <p className="flex-grow">{game.description}</p>
 
-        {/* --- 내가 준 메달 표시 --- */}
-        <div className="my-2 flex items-center gap-2">
-          <span className="font-semibold">나의 투표:</span>
-          {Object.keys(myVotes).length > 0 ? (
-            Object.values(myVotes).map((medal) => (
-              <span key={medal} className="text-2xl">
+        <div className="space-y-2">
+          <h3 className="card-title text-2xl leading-snug">{game.name}</h3>
+          <p className="hidden text-sm leading-6 text-base-content/75 md:block">{game.description}</p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
+            {uniqueClubs.map((club) => (
+              <div key={club} className="badge badge-secondary badge-outline h-auto px-3 py-3">
+                {club}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {medalEntries.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {medalEntries.map((medal, index) => (
+              <span
+                key={`${game._id}-${medal}-${index}`}
+                className="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-base-200 px-3 text-2xl"
+              >
                 {MEDAL_ICONS[medal]}
               </span>
-            ))
-          ) : (
-            <span className="text-sm text-base-content/60">아직 없음</span>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
-        <div className="card-actions justify-between items-center mt-2">
-          {/* --- 총 투표 수 표시 --- */}
-          <div className="font-bold">🏆 총 {voteCount}개 메달</div>
-          {/* --- 투표하기 버튼 --- */}
+        <div className="card-actions mt-auto items-center justify-between gap-3">
           <button
-            className="btn btn-primary"
+            className="btn btn-primary w-full sm:w-auto"
             onClick={onVoteClick}
-            disabled={isMyClubGame}
+            disabled={isMyClubGame || isVoteActionDisabled}
           >
-            {isMyClubGame ? "참여작 투표 불가" : "투표하기"}
+            {isMyClubGame
+              ? "내 동아리 작품은 투표할 수 없어요"
+              : isVoteActionDisabled
+              ? "처리 중..."
+              : "메달 주기"}
           </button>
         </div>
+
       </div>
-    </div>
+    </article>
   );
 }
 

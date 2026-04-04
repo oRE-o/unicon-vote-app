@@ -21,6 +21,7 @@ type AdminUserResponse = {
   _id: string;
   name: string;
   uuid: string;
+  braceletNumber?: string;
   role: IUser["role"];
   club?: string;
   hasPassword: boolean;
@@ -71,6 +72,15 @@ const normalizeGamePayload = (payload: GamePayload) => {
 const validateGamePayload = (payload: ReturnType<typeof normalizeGamePayload>) => {
   if (!payload.name || !payload.description || !payload.imageUrl) {
     return "게임 이름, 설명, 썸네일 URL은 필수입니다.";
+  }
+
+  try {
+    const parsedUrl = new URL(payload.imageUrl);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return "썸네일 URL은 http:// 또는 https:// 주소여야 합니다.";
+    }
+  } catch (_error) {
+    return "유효한 썸네일 URL을 입력해주세요.";
   }
 
   if (
@@ -153,11 +163,39 @@ const serializeUser = (
   _id: String(user._id),
   name: user.name,
   uuid: user.uuid,
+  braceletNumber: user.braceletNumber,
   role: user.role,
   club: user.club,
   hasPassword: Boolean(user.password),
   hasVotes: options?.hasVotes ?? false,
 });
+
+type BulkUserInput = {
+  braceletNumber?: string;
+  name?: string;
+  role?: IUser["role"];
+  club?: string;
+};
+
+const normalizeBulkUserInput = (row: BulkUserInput, index: number) => {
+  const braceletNumber = row.braceletNumber?.trim();
+  const role: IUser["role"] =
+    row.role === "admin" || row.role === "user" || row.role === "guest"
+      ? row.role
+      : "guest";
+  const club = row.club?.trim();
+  const fallbackName = braceletNumber
+    ? `무기명-${braceletNumber}`
+    : `무기명-${index + 1}`;
+  const name = row.name?.trim() || fallbackName;
+
+  return {
+    braceletNumber,
+    name,
+    role,
+    club: club || undefined,
+  };
+};
 
 // --- 사용자 관리 ---
 router.get("/users", async (_req: Request, res: Response) => {
@@ -182,14 +220,16 @@ router.get("/users", async (_req: Request, res: Response) => {
 
 router.post("/users", async (req: Request, res: Response) => {
   try {
-    const { name, role, club } = req.body as {
+    const { name, role, club, braceletNumber } = req.body as {
       name?: string;
       role?: IUser["role"];
       club?: string;
+      braceletNumber?: string;
     };
 
     const trimmedName = name?.trim();
     const trimmedClub = club?.trim();
+    const trimmedBraceletNumber = braceletNumber?.trim();
 
     if (!trimmedName) {
       return res.status(400).json({ message: "사용자 이름이 필요합니다." });
@@ -205,6 +245,7 @@ router.post("/users", async (req: Request, res: Response) => {
       uuid: string;
       role: IUser["role"];
       club?: string;
+      braceletNumber?: string;
     } = {
       name: trimmedName,
       uuid: uuidv4(),
@@ -213,6 +254,10 @@ router.post("/users", async (req: Request, res: Response) => {
 
     if (trimmedClub) {
       newUserPayload.club = trimmedClub;
+    }
+
+    if (trimmedBraceletNumber) {
+      newUserPayload.braceletNumber = trimmedBraceletNumber;
     }
 
     const newUser = new User(newUserPayload);
@@ -230,14 +275,16 @@ router.post("/users", async (req: Request, res: Response) => {
 
 router.patch("/users/:uuid", async (req: Request, res: Response) => {
   try {
-    const { name, role, club } = req.body as {
+    const { name, role, club, braceletNumber } = req.body as {
       name?: string;
       role?: IUser["role"];
       club?: string;
+      braceletNumber?: string;
     };
 
     const trimmedName = name?.trim();
     const trimmedClub = club?.trim();
+    const trimmedBraceletNumber = braceletNumber?.trim();
 
     if (!trimmedName) {
       return res.status(400).json({ message: "사용자 이름이 필요합니다." });
@@ -262,6 +309,12 @@ router.patch("/users/:uuid", async (req: Request, res: Response) => {
       user.club = undefined;
     }
 
+    if (trimmedBraceletNumber) {
+      user.braceletNumber = trimmedBraceletNumber;
+    } else {
+      user.braceletNumber = undefined;
+    }
+
     await user.save();
 
     const hasVotes = Boolean(await Vote.exists({ user: user._id }));
@@ -272,6 +325,153 @@ router.patch("/users/:uuid", async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ message: "사용자 수정 중 오류 발생" });
+  }
+});
+
+router.post("/users/bulk", async (req: Request, res: Response) => {
+  try {
+    const { users } = req.body as { users?: BulkUserInput[] };
+
+    if (!users || users.length === 0) {
+      return res.status(400).json({ message: "업로드할 사용자 목록이 비어 있습니다." });
+    }
+
+    const normalizedUsers = users.map(normalizeBulkUserInput);
+
+    if (normalizedUsers.some((user) => user.role === "admin")) {
+      return res.status(400).json({ message: "admin 계정은 대량 업로드로 만들 수 없습니다." });
+    }
+
+    if (normalizedUsers.some((user) => !user.braceletNumber)) {
+      return res.status(400).json({ message: "모든 행에는 팔찌 번호가 필요합니다." });
+    }
+
+    const braceletNumbers = normalizedUsers.map((user) => user.braceletNumber as string);
+    if (new Set(braceletNumbers).size !== braceletNumbers.length) {
+      return res.status(400).json({ message: "업로드 파일 안에 중복된 팔찌 번호가 있습니다." });
+    }
+
+    const existingUsers = await User.find({ braceletNumber: { $in: braceletNumbers } });
+    if (existingUsers.length > 0) {
+      return res.status(409).json({
+        message: `이미 존재하는 팔찌 번호가 있습니다: ${existingUsers
+          .map((user) => user.braceletNumber)
+          .filter(Boolean)
+          .join(", ")}`,
+      });
+    }
+
+    const createdUsers = await User.insertMany(
+      normalizedUsers.map((user) => ({
+        name: user.name,
+        uuid: uuidv4(),
+        braceletNumber: user.braceletNumber,
+        role: user.role,
+        club: user.club,
+      }))
+    );
+
+    res.status(201).json({
+      message: `${createdUsers.length}개 계정을 등록했습니다.`,
+      createdCount: createdUsers.length,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "대량 사용자 등록 중 오류 발생" });
+  }
+});
+
+router.post("/users/generate-guests", async (req: Request, res: Response) => {
+  try {
+    const { count, startNumber } = req.body as {
+      count?: number;
+      startNumber?: number;
+    };
+
+    if (!count || count < 1) {
+      return res.status(400).json({ message: "생성할 수량은 1개 이상이어야 합니다." });
+    }
+
+    const normalizedStartNumber = startNumber && startNumber > 0 ? startNumber : 1;
+    const generatedRows = Array.from({ length: count }, (_, index) => {
+      const braceletNumber = String(normalizedStartNumber + index);
+      return {
+        name: `무기명-${braceletNumber}`,
+        uuid: uuidv4(),
+        braceletNumber,
+        role: "guest" as const,
+      };
+    });
+
+    const existingUsers = await User.find({
+      braceletNumber: { $in: generatedRows.map((row) => row.braceletNumber) },
+    });
+
+    if (existingUsers.length > 0) {
+      return res.status(409).json({
+        message: `이미 존재하는 팔찌 번호가 있습니다: ${existingUsers
+          .map((user) => user.braceletNumber)
+          .filter(Boolean)
+          .join(", ")}`,
+      });
+    }
+
+    const createdUsers = await User.insertMany(generatedRows);
+
+    res.status(201).json({
+      message: `무기명 팔찌 ${createdUsers.length}개를 생성했습니다.`,
+      createdCount: createdUsers.length,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "무기명 팔찌 생성 중 오류 발생" });
+  }
+});
+
+router.delete("/users/bulk", async (req: Request, res: Response) => {
+  try {
+    const { braceletNumbers } = req.body as { braceletNumbers?: string[] };
+
+    if (!braceletNumbers || braceletNumbers.length === 0) {
+      return res.status(400).json({ message: "삭제할 팔찌 번호 목록이 필요합니다." });
+    }
+
+    const normalizedBraceletNumbers = braceletNumbers
+      .map((braceletNumber) => braceletNumber?.trim())
+      .filter(Boolean) as string[];
+
+    if (normalizedBraceletNumbers.length === 0) {
+      return res.status(400).json({ message: "유효한 팔찌 번호가 없습니다." });
+    }
+
+    const targetUsers = await User.find({ braceletNumber: { $in: normalizedBraceletNumbers } });
+    if (targetUsers.length === 0) {
+      return res.status(404).json({ message: "삭제할 팔찌 계정을 찾지 못했습니다." });
+    }
+
+    const targetIds = targetUsers.map((user) => user._id);
+    const votedUserIds = new Set((await Vote.distinct("user", { user: { $in: targetIds } })).map(String));
+    const blockedUsers = targetUsers.filter(
+      (user) =>
+        user.role !== "guest" ||
+        Boolean(user.password) ||
+        votedUserIds.has(String(user._id))
+    );
+
+    if (blockedUsers.length > 0) {
+      return res.status(409).json({
+        message: `삭제할 수 없는 계정이 포함되어 있습니다: ${blockedUsers
+          .map((user) => user.braceletNumber || user.uuid)
+          .join(", ")}`,
+      });
+    }
+
+    const deleted = await User.deleteMany({ _id: { $in: targetIds } });
+
+    res.status(200).json({
+      message: `${deleted.deletedCount || 0}개 팔찌 계정을 삭제했습니다.`,
+      deletedCount: deleted.deletedCount || 0,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "대량 사용자 삭제 중 오류 발생" });
   }
 });
 
@@ -386,11 +586,28 @@ router.post("/users/replace-bracelet", async (req: Request, res: Response) => {
 
 router.delete("/users/:uuid", async (req: Request, res: Response) => {
   try {
-    const result = await User.findOneAndDelete({ uuid: req.params.uuid });
+    const user = await User.findOne({ uuid: req.params.uuid });
 
-    if (!result) {
+    if (!user) {
       return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
+
+    const hasVotes = await Vote.exists({ user: user._id });
+    if (hasVotes) {
+      return res.status(409).json({
+        message:
+          "이미 투표 이력이 있는 사용자는 삭제할 수 없습니다. 정보 수정이나 비밀번호 초기화를 사용해주세요.",
+      });
+    }
+
+    if (user.role === "admin") {
+      return res.status(409).json({
+        message:
+          "관리자 계정은 여기서 삭제할 수 없습니다. 역할을 다시 확인하고 별도 절차로 관리해주세요.",
+      });
+    }
+
+    await User.deleteOne({ _id: user._id });
 
     res.status(200).json({ message: "사용자가 삭제되었습니다." });
   } catch (error) {
@@ -565,7 +782,21 @@ router.patch("/games/:id", async (req: Request, res: Response) => {
 
 router.delete("/games/:id", async (req: Request, res: Response) => {
   try {
-    await Game.findByIdAndDelete(req.params.id);
+    const game = await Game.findById(req.params.id);
+
+    if (!game) {
+      return res.status(404).json({ message: "게임을 찾을 수 없습니다." });
+    }
+
+    const hasVotes = await Vote.exists({ game: game._id });
+    if (hasVotes) {
+      return res.status(409).json({
+        message:
+          "이미 투표 이력이 있는 게임은 삭제할 수 없습니다. 설명/썸네일 수정으로 대응해주세요.",
+      });
+    }
+
+    await Game.deleteOne({ _id: game._id });
     res.status(200).json({ message: "게임이 성공적으로 삭제되었습니다." });
   } catch (error) {
     res.status(500).json({ message: "게임 삭제 중 오류 발생" });
@@ -590,6 +821,7 @@ router.get("/votes/results", async (_req: Request, res: Response) => {
     const results: Record<string, any> = {};
     games.forEach((game) => {
       results[String(game._id)] = {
+        gameId: String(game._id),
         gameName: game.name,
         category: game.category,
         impressive: { gold: 0, silver: 0, bronze: 0, score: 0 },

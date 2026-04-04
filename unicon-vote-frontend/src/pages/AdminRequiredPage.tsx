@@ -1,15 +1,20 @@
+import { useMemo } from "react";
+
 function AdminRequiredPage() {
+  const reason = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("reason");
+  }, []);
+
   return (
     <div className="min-h-screen bg-base-100 flex flex-col items-center justify-center gap-6 p-4 text-center">
-      <h1 className="text-4xl font-bold">
-        🚫 의문의 미소녀가 당신의 길을 막았다!
-      </h1>
+      <h1 className="text-4xl font-bold">🚫 이 페이지는 지금 열 수 없어요.</h1>
       <p className="text-lg">
-        이 페이지에 접근하려면 160 이상의 레벨이 필요해.
+        {reason === "expired"
+          ? "세션이 만료되어 다시 인증이 필요합니다."
+          : "현재 계정으로는 이 페이지에 접근할 수 없습니다."}
       </p>
-      <p className="text-lg">
-        몬스터를 잡아 레벨을 올리고 다시 도전해보라구. 후후.
-      </p>
+      <p className="text-sm opacity-70">필요한 계정으로 다시 로그인한 뒤 이용해주세요.</p>
     </div>
   );
 }

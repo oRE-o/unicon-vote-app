@@ -6,10 +6,43 @@
   themes: dracula --default;
 }
 
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background:
+    radial-gradient(circle at top, rgba(124, 58, 237, 0.18), transparent 35%),
+    linear-gradient(180deg, #151329 0%, #0f1020 100%);
+}
+
 body,
 #root {
   font-family: "Montserrat", "Pretendard", sans-serif;
   letter-spacing: -0.5px;
   word-spacing: -0.5px;
   height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  color: oklch(96% 0.01 286);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(168, 85, 247, 0.35);
+}
+
+.badge {
+  max-width: 100%;
+  white-space: nowrap;
+  text-wrap: nowrap;
+  word-break: keep-all;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
